@@ -1,0 +1,62 @@
+FTPAUTH  TITLE 'FTP Authorization Processor'
+***********************************************************************
+***                                                                 ***
+*** Program:  FTPAUTH                                               ***
+***                                                                 ***
+*** Purpose:  C function to authorize or unauthorize FTPD.          ***
+***                                                                 ***
+*** Usage:    void rac_ftpd_auth (unsigned int state);              ***
+***                                                                 ***
+*** Function: Use SVC244 to set or clear JSCBAUTH, depending on     ***
+***           the value (0/1) of state.                             ***
+***                                                                 ***
+*** Updates:  2015/03/15 original implementation.                   ***
+***                                                                 ***
+*** Author:   Juergen Winkelmann, ETH Zuerich.                      ***
+***                                                                 ***
+***********************************************************************
+         PRINT NOGEN            no expansions please
+FTPAUTH  CSECT ,                start of program
+         STM   R14,R12,12(R13)  save registers
+         L     R2,8(,R13)       \
+         LA    R14,84(,R2)       \
+         L     R12,0(,R13)        \
+         CL    R14,4(,R12)         \
+         BL    F1-FTPAUTH+4(,R15)   \
+         L     R10,0(,R12)           \ save area chaining
+         BALR  R11,R10               / and JCC prologue
+         CNOP  0,4                  /
+F1       DS    0H                  /
+         DC    F'84'              /
+         STM   R12,R14,0(R2)     /
+         LR    R13,R2           /
+         LR    R12,R15          establish module addressability
+         USING FTPAUTH,R12      tell assembler of base
+         LR    R11,R1           parameter list
+*
+* set or clear?
+*
+         L     R3,0(,R11)       state ..
+         LTR   R3,R3              .. = 0?
+         BZ    CLEAR            yes -> clear
+*
+* set JSCBAUTH
+*
+         BSPAUTH ON             become authorized
+         B     RETURN           return
+*
+* clear JSCBAUTH
+*
+CLEAR    BSPAUTH OFF            no longer authorized
+*
+* Return to caller
+*
+RETURN   L     R13,4(,R13)      caller's save area pointer
+         L     R14,12(,R13)     restore R14
+         LM    R1,R12,24(R13)   restore registers
+         BR    R14              return to caller
+*
+* Data area
+*
+         YREGS ,                register equates
+         END   FTPAUTH          end of FTPAUTH

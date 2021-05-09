@@ -1,0 +1,76 @@
+FTPSU    TITLE 'FTP Switch User Processor'
+***********************************************************************
+***                                                                 ***
+*** Program:  FTPSU                                                 ***
+***                                                                 ***
+*** Purpose:  C function to switch user                             ***
+***                                                                 ***
+*** Usage:    unsigned int rac_switch_user (unsigned int acee);     ***
+***                                                                 ***
+***           where acee is the access control environment element  ***
+***           address obtained from rac_user_login when the user    ***
+***           logged in.                                            ***
+***                                                                 ***
+*** Function: Replace the contents of ASXBSENV with acee and return ***
+***           the previous ASXBENV contents to the caller.          ***
+***                                                                 ***
+*** Updates:  2015/03/15 original implementation.                   ***
+***                                                                 ***
+*** Author:   Juergen Winkelmann, ETH Zuerich.                      ***
+***                                                                 ***
+***********************************************************************
+         PRINT NOGEN            no expansions please
+FTPSU    CSECT ,                start of program
+         STM   R14,R12,12(R13)  save registers
+         L     R2,8(,R13)       \
+         LA    R14,96(,R2)       \
+         L     R12,0(,R13)        \
+         CL    R14,4(,R12)         \
+         BL    F1-FTPSU+4(,R15)     \
+         L     R10,0(,R12)           \ save area chaining
+         BALR  R11,R10               / and JCC prologue
+         CNOP  0,4                  /
+F1       DS    0H                  /
+         DC    F'96'              /
+         STM   R12,R14,0(R2)     /
+         LR    R13,R2           /
+         LR    R12,R15          establish module addressability
+         USING FTPSU,R12        tell assembler of base
+         LR    R11,R1           parameter list
+*
+* enter supervisor state
+*
+         MODESET KEY=ZERO,MODE=SUP enter supervisor state
+*
+* switch user
+*
+         LA    R6,0             get PSA address
+         USING PSA,R6           tell assembler
+         L     R6,PSAAOLD       get ASCB address
+         USING ASCB,R6          tell assembler
+         L     R6,ASCBASXB      get ASXB address
+         USING ASXB,R6          tell assembler
+         L     R7,ASXBSENV      remember ACEE address of current user
+         L     R3,0(,R11)       ACEE address of new user
+         ST    R3,ASXBSENV      switch to new user
+         DROP  R6               ASXB no longer needed
+*
+* return to problem state
+*
+         MODESET KEY=NZERO,MODE=PROB back to problem state
+         LR    R15,R7           return ACEE adress of previous user
+*
+* Return to caller
+*
+RETURN   L     R13,4(,R13)      caller's save area pointer
+         L     R14,12(,R13)     restore R14
+         LM    R1,R12,24(R13)   restore registers
+         BR    R14              return to caller
+*
+* Data area
+*
+         YREGS ,                register equates
+         IHAPSA ,               map PSA
+         IHAASCB ,              map ASCB
+         IHAASXB ,              map ASXB
+         END   FTPSU            end of FTPSU
