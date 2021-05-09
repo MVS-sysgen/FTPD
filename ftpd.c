@@ -1451,6 +1451,11 @@ static void set_xfer_callback (data_tag_ptr data) {
             remove_callbacks (data->DATA_SOCK);
         };
     };
+    if (data->DATA_SOCK_STATUS == 'C') {
+        /* if not yet active, just wait
+           and the callback will be put in once the connection is made */
+        remove_callbacks (data->DATA_SOCK);
+    };
 };
 
 /*
