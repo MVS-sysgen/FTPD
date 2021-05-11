@@ -1,4 +1,0 @@
-detach c
-attach c 3505 3505 sockdev ebcdic
-attach c 3505 3505 sockdev ebcdic
-/$s punch1
