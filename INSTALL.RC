@@ -1,5 +1,5 @@
 # RC file for FTPD
 * Installing FTPD
 * Launching Automation REXX script
-sh bash ../FTPD/install.sh
-exec ../automate.rexx ../FTPD/install.txt hercules.log -d &&
+sh bash ../SOFTWARE/FTPD/install.sh
+exec ../automate.rexx ../SOFTWARE/FTPD/install.txt hercules.log -d &&

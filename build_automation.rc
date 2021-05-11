@@ -1,3 +1,3 @@
 # Starting automation rexx exec
-sh bash ../FTPD/build_01.sh
-exec ../automate.rexx ../FTPD/build_automation.txt hercules.log -d &&
+sh bash ../SOFTWARE/FTPD/build_01.sh
+exec ../automate.rexx ../SOFTWARE/FTPD/build_automation.txt hercules.log -d &&
