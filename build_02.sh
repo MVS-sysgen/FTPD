@@ -10,5 +10,5 @@ echo "Compiling ftpd.c"
 echo "linking object files to ftpd.load"
 ./jcc/prelink -r jcc/objs ftpd.load ftpd.obj ftpdrac.obj
 echo "creating JCL to install FTPDDEV to SYS2.LINKLIB"
-rdrprep 03_link_ftpd.template 03_link_ftpd.ebcdic.jcl
+rdrprep build_03_link_ftpd.template build_03_link_ftpd.ebcdic.jcl
 echo "Build 03 Completed"
