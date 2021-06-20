@@ -6,7 +6,7 @@ This FTP daemon requires RAKF to run. Please install RAKF before using this.
 
 ## Automated Install
 
-If you're using (SYSGEN)[https://github.com/MVS-sysgen/sysgen] you can run the TSO command: `INSTALL FTPD` this
+If you're using [SYSGEN](https://github.com/MVS-sysgen/sysgen) you can run the TSO command: `INSTALL FTPD` this
 will automatically install the FTPD server and start the server running on
 `localhost:2121`
 
