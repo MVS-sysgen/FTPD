@@ -14,7 +14,7 @@ facility enable HERC_TCPIP_PROB_STATE
 ## Using Build Automation
 
 If you've made changes and wish to build from scratch you can use the script file `build_automation.rc`. To
-use it from the hercules console use: `script ../SOFTWARE/FTPD/build_automation.rc`.
+use it from the hercules console place this repo in the `SYSGEN/SOFTWARE` folder and type: `script ../SOFTWARE/FTPD/build_automation.rc`.
 
 This script does all the steps outlined below as well as generating an XMI file with FTPD and FTPDXCTL located
 at `SYSGEN.FTPD.XMIT`.
