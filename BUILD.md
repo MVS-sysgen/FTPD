@@ -42,8 +42,6 @@ If you only make changes to `ftpd.c`/`mvsdirs.h` then follow these steps:
 
 :warning: You must have FTP or IND$FILE installed
 
-*If you made changes to just `ftpd.c`/`mvsdirs.h` you can skip steps 1 through 4*
-
 1) Get JCC: `git clone https://github.com/mvslovers/jcc.git`
 2) Get rdrprep: `git clone https://github.com/mvslovers/rdrprep.git`
   - Install rdrprep with `make` and `sudo make install`
