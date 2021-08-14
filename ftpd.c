@@ -49,33 +49,78 @@ char * strupr (char * s) {
 */
 
 #define MAXBUFLEN 4096        /* Normal buffer size for FTP - all/most NW cards/drivers support this. */
-/* #define MAXBUFLEN 32768 */ /* Largest buffer size allowed in Windows */
 /* used for socket send/recv max size, buffers are twice as big (plus one for an optional terminator.) */
 
 #define PATHLENGTH 260
+/* MAX Dataset name lenth with member and terminator */
+#define MAXDSN 53
+
+#define DEFAULT_SRVIP "any"
+#define DEFAULT_SRVPORT 21
+#define DEFAULT_PASVADDR "127,0,0,1"
 
 #define FAKE_USER  "user"
 #define FAKE_GROUP "group"
 
-#define WELCOME_MESSAGE  "*** MVS38j FTP Daemon on TK4- ***"
+#define DEFAULT_PARMLIB "//DSN:SYS1.PARMLIB(VATLSTFF)"
+#define TEMP_PARMLIB "SYS1.PARMLIB(FTPDP00)"
+#define DSNFMT "//DSN:%s"
+
+#define WELCOME_MESSAGE  "%s FTP server (MVS 3.8j) ready"
+
+#define INIT_MESSAGE     "FTP000I Startup - FTPD Starting with %d arguments"
+#define ARG_MESSAGES_S   "FTP001I Startup - Argument (%d) %s = %s (replaces previous setting: %s)"
+#define ARG_MESSAGES_I   "FTP001I Startup - Argument (%d) %s = %s (replaces previous setting: %d)"
+#define DDNAME_MESSAGES  "FTP001I Startup - Argument (%d) DD Name %s added"
+#define PARMLIB_READ     "FTP001I Startup - Parameter %s = '%s'"
+#define PARMLIB_MESSAGE  "FTP002I Startup - Reading parmlib %s"
+#define DEVICE_MESSAGES  "FTP003I Startup - Reading DASD %s,%s"
+#define DATASET_MESSAGE  "FTP004I Startup - %d datasets"
+#define SOCKET_MESSAGE   "FTP005I Startup Complete - FTP server listening on port: %d"
+#define SHUTDOWN_MESSAGE "FTP006I Shutdown complete"
+/* Error messages */
+#define ERROR_MESSAGES   "FTP001E Error - %s"
+#define PARLMIB_ERROR    "FTP001E Error - Configuration file %s not available"
+#define PARLMIB_ERROR_L  "FTP002E Warning - Line %d in %s not a valid option or disk"
+#define LISTEN_ERROR     "FTP003E Error - Can't Listen on port %d (Errno: %d)"
+#define ARG_ERROR        "FTP004E Warning - Argument (%d) %s = %s not recognized"
+/* RAKF MESSAGES */
+#define LOGIN_MESSAGE_C  "FTP001R %s - logged in - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
+#define REJECT_MESSAGE   "FTP002R %d.%d.%d.%d - rejected - %.2d.%.2d.%.2d %d/%.2d/%.2d"
+#define LOGOUT_MESSAGE_C "FTP003R %s - logged out - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
 #define LOGIN_MESSAGE    "You are now logged in."
-#define LOGIN_MESSAGE_C  "FTP001I %s - logged in - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
-#define REJECT_MESSAGE   "FTP002I %d.%d.%d.%d - rejected - %.2d.%.2d.%.2d %d/%.2d/%.2d"
-#define LOGOUT_MESSAGE_C "FTP003I %s - logged out - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
 #define LOGIN_FAILED_MESSAGE "Authentication failed, login rejected."
+/* Generic information */
+#define GENERIC_MESSAGE   "FTP00GI - %s"
+#define GENERIC_WARNING   "FTP00GW - %s"
+#define GENERIC_ERROR     "FTP00GE - %s"
+
 #define AUTH_USER "HERC01"
 
 short  SERVER_PORT;
 char   SERVER_IP [16];
+char   *PARMLIB;
+char   *PARMLIB_PRINT;
 
 struct tm * td;
 time_t lt;
 char   wtomsg [126];
+char   welcome [126];
 
 extern unsigned int rac_user_login (char * user, char * pass);
 extern unsigned int rac_user_logout (unsigned int acee);
 extern unsigned int rac_switch_user (unsigned int acee);
 extern void rac_ftp_auth (unsigned int state);
+
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
+
+#include "mvsdirs.h"
+
+/**********************************************************************/
+/**********************************************************************/
+/**********************************************************************/
 
 void user_logout (unsigned int acee, char * user) {
     rac_user_logout ((unsigned int) &acee);
@@ -1146,6 +1191,9 @@ static char * ftp_server_msg (long code, char * message) {
 */
 static data_tag_ptr new_ftp_data (SOCKET SOCK) {
     char *       s;
+    char sysname[4];
+    //char *sysname = _sysname();
+
     data_tag_ptr data;
 
     data = malloc (sizeof (data_t));
@@ -1159,9 +1207,12 @@ static data_tag_ptr new_ftp_data (SOCKET SOCK) {
     data->READ_BUF = (char *)malloc ((MAXBUFLEN * 2) + 1);
     data->READ_BUF [0] = 0;
     data->READ_BUF_LENGTH = 0;
-
     data->WRITE_BUF = (char *)malloc ((MAXBUFLEN * 2) + 1);
-    s = ftp_server_msg (220, WELCOME_MESSAGE);
+
+    _sysname(sysname);
+    sprintf (welcome, WELCOME_MESSAGE, sysname);
+
+    s = ftp_server_msg (220, welcome);
     strcpy (data->WRITE_BUF, s);
     free (s);
     data->WRITE_BUF_LENGTH = strlen (data->WRITE_BUF);
@@ -1554,15 +1605,7 @@ static void ctl_write_msg (data_tag_ptr data, long code, char * message) {
     free (to_write);
 };
 
-/**********************************************************************/
-/**********************************************************************/
-/**********************************************************************/
 
-#include "mvsdirs.h"
-
-/**********************************************************************/
-/**********************************************************************/
-/**********************************************************************/
 
 /*
 # takes a path name, and removes any extra slashes and trailing slashes,
@@ -1675,7 +1718,7 @@ static void refresh () {
     int j;
 
     numdevs = 0;
-    i = dirsupport (); // Re-read the VATLST00 file (not really needed)
+    i = dirsupport (DEFAULT_PARMLIB); // Re-read the VATLST00 file (not really needed)
     if (i == 0) {
         r = (p_root)malloc (sizeof (t_root));
         if (r == NULL) {
@@ -2478,42 +2521,169 @@ static void ftp_serv_sock_rcb (SOCKET serv_sock, data_tag_ptr data) {
     set_callbacks (acc, new_ftp_data (acc), &ftp_sock_rcb, &ftp_sock_wcb);
 };
 
+static long readparmlib () {
+    long   i,j;
+    FILE * fh;
+    char * conf;
+    char * parm;
+    char   line [81];
+
+    sprintf (wtomsg,PARMLIB_MESSAGE,PARMLIB_PRINT);
+    _write2op (wtomsg);
+
+    fh = fopen (PARMLIB, "rb");
+    if (fh == NULL) {
+        return (1);
+    }
+
+    j=0;
+    while (fread (line, 1, 80, fh) != 0) {
+        j++;
+       /* Skip comments */
+         if ( (line[0] == '#') ) {
+            continue ;
+         }
+         else if( strchr(line, '=') != NULL ) {
+
+            conf = strtok(line, "= ");
+            //setting = strtok(NULL, "=");
+            parm = strtok(NULL, "= ");
+            sprintf (wtomsg,PARMLIB_READ, conf, parm);
+            _write2op (wtomsg);
+
+            if( (stricmp (conf, "fast") == 0) && (stricmp (parm, "true") == 0) ) {
+                __libc_arch = 1; /* Enable speed optimisations within the library */
+            } else if( stricmp (conf, "SRVPORT") == 0 ) {
+                SERVER_PORT = (short)atoi (parm);
+            } else if( stricmp (conf, "SRVIP") == 0 ) {
+                strcpy (SERVER_IP, parm);
+            } else if( stricmp (conf, "PASVADR") == 0 ) {
+                strcpy (PASVADDR, parm);
+            } else {
+                /* Error on line X in config file */
+                sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
+                _write2op (wtomsg);
+            }
+
+
+        } else if ( strchr(line, ',') != NULL) {
+            /* No = means its not a parm, likely disk */
+            continue;
+        } else {
+            /* You have an error in your config file */
+            sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
+            _write2op (wtomsg);
+         }
+
+    }
+
+    fclose (fh);
+
+    return (0);
+}
+
 void main (int argc, char ** argv) {
     long   serv_ip;
     SOCKET serv_sock;
     long   i;
     long   j;
+    char * argument;
+    char * option;
+    size_t optind;
+
     data_tag_ptr data;
     cb_data_ptr ohead;
-
     p_root r;
     int dircount = 0;
 
-    if ((argc >= 5) && (stricmp (argv [1], "fast") == 0)) {
-        printf ("Library Optimisation Extensions Enabled\n");
-        __libc_arch = 1; /* Enable speed optimisations within the library */
-        j = 2;
-    } else
-        j = 1;
+    sprintf (wtomsg, INIT_MESSAGE, argc-1);
+    _write2op (wtomsg);
 
-    strcpy (PASVADDR, argv [j]);
-    j++;
+    PARMLIB = (char *)malloc (MAXDSN);
+    PARMLIB_PRINT = (char *)malloc (MAXDSN);
 
-    strcpy (SERVER_IP, argv [j]);
-    SERVER_PORT = (short)atoi (SERVER_IP);
-    j++;
+    // Setup the defaults
 
-    strcpy (SERVER_IP, argv [j]);
-    j++;
+    sprintf(SERVER_IP, DEFAULT_SRVIP);
+    sprintf(PASVADDR, DEFAULT_PASVADDR);
+    SERVER_PORT = DEFAULT_SRVPORT;
 
-    while ((j < argc) && (added_ddc < added_ddl)) {
-        if (strnicmp (argv [j], "//DDN:", 6) == 0) {
-            strncpy (added_dds [added_ddc], &(argv [j][6]), 8);
-            added_dds [added_ddc][8] = 0;
-            strupr (added_dds [added_ddc++]);
+    // Read config files and change the values if appropriate
+    // Config file settings overide defaults
+
+    sprintf(PARMLIB_PRINT,TEMP_PARMLIB);
+    sprintf(PARMLIB,DSNFMT,TEMP_PARMLIB);
+
+    for (optind = 1; optind < argc; optind++) {
+        if ( strstr(argv[optind],"PARMLIB=") != NULL ) {
+
+            argument = strtok(argv[optind], "=");
+            option = strtok(NULL, "=");
+
+            if (strlen(option) > MAXDSN) {
+
+                sprintf (wtomsg,ERROR_MESSAGES, "PARMLIB supplied longer than alloweable dataset name length. Using default.");
+                _write2op (wtomsg);
+                continue;
+                }
+
+            sprintf(PARMLIB,DSNFMT,option);
+            sprintf(PARMLIB_PRINT,option);
+
+            }
+
         }
-        j++;
-    }
+
+
+    i = readparmlib();
+    if (i != 0) {
+        printf ("Couldn't initialise\n");
+        sprintf (wtomsg, PARLMIB_ERROR, PARMLIB);
+        _write2op (wtomsg);
+        return;
+    };
+
+    // Done reading config file time to parse arguments
+    // Arguments overide the defaults and config file settings
+
+    for (optind = 1; optind < argc; optind++) {
+        if ( strstr(argv[optind],"PARMLIB=") == NULL ) {
+            argument = strtok(argv[optind], "=");
+            option = strtok(NULL, "=");
+            if( (stricmp (argument, "fast") == 0) && (stricmp (option, "true") == 0) ) {
+                __libc_arch = 1; /* Enable speed optimisations within the library */
+            } else if( stricmp (argument, "SRVPORT") == 0 ) {
+                sprintf (wtomsg,ARG_MESSAGES_I, optind, argument, option, SERVER_PORT);
+                _write2op (wtomsg);
+                SERVER_PORT = (short)atoi (option);
+            } else if( stricmp (argument, "SRVIP") == 0 ) {
+                sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, SERVER_IP);
+                _write2op (wtomsg);
+                strcpy (SERVER_IP, option);
+            } else if( stricmp (argument, "PASVADR") == 0 ) {
+                sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, PASVADDR);
+                _write2op (wtomsg);
+                strcpy (PASVADDR, option);
+            } else if( stricmp (argument, "DD") == 0 ) {
+                // DD names that FTP can access
+                // Can be used for internal reader etc
+                if (added_ddc < added_ddl) {
+                    sprintf (wtomsg,DDNAME_MESSAGES, optind, option);
+                    _write2op (wtomsg);
+                    strcpy (added_dds [added_ddc], option);
+                    strupr (added_dds [added_ddc]);
+                    added_ddc++;
+                } else {
+                    sprintf (wtomsg,GENERIC_WARNING, "Max DD names reached");
+                    _write2op (wtomsg);
+                }
+            } else {
+                /* Unrocignized Argument */
+                sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
+                _write2op (wtomsg);
+            }
+        }
+    } // End of argument for loop
 
 #ifdef debug_output
         printf ("Init...\n");
@@ -2523,6 +2693,7 @@ void main (int argc, char ** argv) {
 #ifdef debug_output
         printf ("Directory Read...\n");
 #endif
+
     i += dirsupport ();
 
 #ifdef debug_output
@@ -2538,7 +2709,14 @@ void main (int argc, char ** argv) {
         r->dircount = 0;
         r->next = NULL;
         j = 0;
+
+        sprintf (wtomsg, "FTP002I Startup - Reading %d DASD", numdevs);
+        _write2op (wtomsg);
         while (j < numdevs) {
+
+            sprintf (wtomsg, DEVICE_MESSAGES,devices [j], units [j]);
+            _write2op (wtomsg);
+
             i += readvtoc (devices [j], units [j], r);
             j++;
         };
@@ -2547,6 +2725,8 @@ void main (int argc, char ** argv) {
 
     if (i != 0) {
         printf ("Couldn't initialise\n");
+        sprintf (wtomsg, PARLMIB_ERROR, PARMLIB_PRINT);
+        _write2op (wtomsg);
         return;
     };
 
@@ -2556,10 +2736,11 @@ void main (int argc, char ** argv) {
         dircount += r->dircount;
         r = r->next;
     }
-    printf ("Starting... (%d datasets)\n", dircount);
+    sprintf (wtomsg, DATASET_MESSAGE, dircount);
+    _write2op (wtomsg);
 //#endif
 
-    if (strcmp (SERVER_IP, "any") != 0) {
+    if (stricmp (SERVER_IP, "any") != 0) {
         inet_aton (SERVER_IP, (void *)&serv_ip);
     } else {
         serv_ip = htonl (INADDR_ANY);
@@ -2568,10 +2749,17 @@ void main (int argc, char ** argv) {
     serv_sock = listen_sock (SERVER_PORT, serv_ip);
     if (serv_sock < 0) {
         printf ("Can't Listen error %d, is FTP already running on Port %d?\n", errno, SERVER_PORT);
+        sprintf (wtomsg, LISTEN_ERROR, SERVER_PORT, errno);
+        _write2op (wtomsg);
+
     } else {
 #ifdef debug_output
         printf ("Listening on Socket: %d, Port: %d\n", serv_sock, SERVER_PORT);
 #endif
+
+        sprintf (wtomsg, SOCKET_MESSAGE, SERVER_PORT);
+        _write2op (wtomsg);
+
         set_callbacks (serv_sock, NULL, &ftp_serv_sock_rcb, NULL);
 
         run_callbacks ();
@@ -2645,6 +2833,8 @@ void main (int argc, char ** argv) {
         };
     };
 //#ifdef debug_output
-        printf ("Ending...\n", dircount);
+
+sprintf (wtomsg, SHUTDOWN_MESSAGE);
+_write2op (wtomsg);
 //#endif
 };

@@ -11,6 +11,8 @@ facility enable HERC_TCPIP_EXTENSION
 facility enable HERC_TCPIP_PROB_STATE
 ```
 
+If you are using MVS/CE building requires the MACLIBS package. Install with the TSO command `INSTALL MACLIBS`.
+
 ## Using Build Automation
 
 If you've made changes and wish to build from scratch you can use the script file `build_automation.rc`. To
@@ -24,41 +26,28 @@ otherwise you'll get abnormal ends.
 
 ### Compiling FTP
 
-If you only make changes to `ftpd.c`/`mvsdirs.h` then follow these steps:
-
-1) Compile `ftpd.c` with jcc: `~/jcc/jcc -I/path/to/jcc/include -I./ -D__MVS_ -o -list=list.out ftpd.c`
-  - This will create `ftpd.obj`
-2) Use `objscan` from jcc to replace HLASM names: `~/jcc/objscan FTPOBJ objscan_input.nam ftpdrac.obj`
-  - This creates `ftpdrac.obj`
-3) Use `prelink` to link the object: `./jcc/prelink -r jcc/objs output.load ftpd.obj ftpdrac.obj`
-  - This creates `output.load`
-4) This step is complicated but first you create the JCL in EBCDIC, then change the socket reader in hercules to ebcdic, then submit the job:
-  - Create the ebcdic jcl file: `rdrprep 03_link_ftpd.template` this will make the file `reader.jcl`
-  - Then in the hercules console type the followin two commands: `detach c` and `attach c 3505 3505 sockdev ebcdic trunc eof`
-  - Now submit `reader.jcl` with your socket submit script: `../sysgen/submit.sh reader.jcl`
-
 
 ### Building From Scratch
 
-:warning: You must have FTP or IND$FILE installed
 
 1) Get JCC: `git clone https://github.com/mvslovers/jcc.git`
-2) Get rdrprep: `git clone https://github.com/mvslovers/rdrprep.git`
+1) Get rdrprep: `git clone https://github.com/mvslovers/rdrprep.git`
   - Install rdrprep with `make` and `sudo make install`
-3) Generate new JCL to assemble the FTP hlasm programs:`rdrprep --print 01_assemble_ftp_objects.template |grep -v getASCIIline > 01_assemble_ftp_objects.jcl`
-4) Then submit `01_assemble_ftp_objects.jcl` to the socket reader `../sysgen/submit.sh 01_assemble_ftp_objects.jcl`
-5) Download the file `IBMUSER.FTPOBJ` in :warning:**binary**:warning: to this folder and name it `FTPOBJ`
-  - You can use with `IND$FILE` or use the FTP server if you've alread installed it once
-6) Compile `ftpd.c` with jcc: `~/jcc/jcc -I/path/to/jcc/include -I./ -D__MVS_ -o -list=list.out ftpd.c`
+1) Generate new JCL to assemble the FTP hlasm programs:`rdrprep --print build_01_assemble_ftp_objects.template |grep -v getASCIIline > 01_assemble_ftp_objects.jcl`
+1) Change the punch output file and folder by type the following on the hercules console `detach d` followed by `attach d 3525 ../SOFTWARE/FTPD/ftpdrakf.punch ebcdic`
+1) Then submit `01_assemble_ftp_objects.jcl` to the socket reader `../sysgen/submit.sh 01_assemble_ftp_objects.jcl`
+  - When you see `/ $HASP150 MAKEFTPD ON PUNCH1          34 CARDS` in the hercules console type: `/$s punch1`, this will place the assembled binary in `../SOFTWARE/FTPD/ftpdrakf.punch`
+1) Remove  ftpdrakf.punch header and footer with linux command: `dd if=ftpdrakf.punch bs=1 skip=160 count=2720 of=ftpdrac.pch`
+1) Use `objscan` from jcc to replace HLASM names: `~/jcc/objscan ftpdrac.pch objscan_input.nam ftpdrac.obj`
+  - This command replaced the labels/names in HLASM like `FTPLOGIN` with `rac_user_login` which is used in `ftpd.c`
+  - This step creates `ftpdrac.obj`
+1) Compile `ftpd.c` with jcc: `~/jcc/jcc -I/path/to/jcc/include -I./ -D__MVS_ -o -list=list.out ftpd.c`
   - This will create `ftpd.obj`
-7) Use `objscan` from jcc to replace HLASM names: `~/jcc/objscan FTPOBJ objscan_input.nam ftpdrac.obj`
-  - This creates `ftpdrac.obj`
-8) Use `prelink` to link the object: `./jcc/prelink -r jcc/objs output.load ftpd.obj ftpdrac.obj`
-  - This creates `output.load`
-9) This step is complicated but first you create the JCL in EBCDIC, then change the socket reader in hercules to ebcdic, then submit the job:
-  - Create the ebcdic jcl file: `rdrprep 03_link_ftpd.template` this will make the file `reader.jcl`
-  - Then in the hercules console type the followin two commands: `detach c` and `attach c 3505 3505 sockdev ebcdic trunc eof`
-  - Now submit `reader.jcl` with your socket submit script: `../sysgen/submit.sh reader.jcl`
+1) Use `prelink` to link the object: `./jcc/prelink -r jcc/objs ftpd.load ftpd.obj ftpdrac.obj`
+  - This creates `ftpd.load` which is our assembled program ready to link in MVS
+1) This step is complicated but first you create the JCL in EBCDIC, then then submit the job to the reader on port 3506 which speaks ebcdic:
+1) Generate an EBCDIC JCL with the `ftpd.load` inside: `rdrprep build_03_link_ftpd.template`
+1) Submit this job which will link and place `FTPD` in `SYS2.LINKLIB`: `cat reader.jcl | ncat --send-only -w1 localhost 3506 `
 
 ### Launching FTPD
 

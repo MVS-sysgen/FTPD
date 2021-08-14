@@ -2,13 +2,19 @@
 
 **Note**: This FTP server was originally written by Jason Winter and Juergen Winkelmann.
 
-This FTP daemon requires RAKF to run. Please install RAKF before using this.
+This FTP daemon requires RAKF to run. You must install RAKF for this FTP server to work.
 
 ## Automated Install
 
+<<<<<<< Updated upstream
 If you're using [SYSGEN](https://github.com/MVS-sysgen/sysgen) but are running the verson without software installed you can run the TSO command: `INSTALL FTPD` this will automatically install the FTPD server and start the server running on `localhost:2121`. Otherwise its likely already installed, check in `SYS2.PROCLIB` for `FTPD`. 
 
 ## Starting the FTP server
+=======
+If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) you can run the TSO command: `INSTALL FTPD` this
+will automatically install the FTPD server and start the server running on
+`localhost:2121`
+>>>>>>> Stashed changes
 
 To enable the FTPD server after IPL run the command `/s ftpd,srvport=2121`
 

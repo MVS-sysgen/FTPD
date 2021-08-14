@@ -1,40 +1,69 @@
-/*
- * Copyright (c)2003, 2009 Jason Paul Winter, All Rights Reserved.
- */
+
+//  Copyright (c)2003, 2009 Jason Paul Winter, All Rights Reserved.
+
 
 #define maxdevs 200
+
 static long numdevs = 0;
 static char devices [maxdevs][7];
 static char units   [maxdevs][7];
 
+/*
+ SMFID/SYSNAME
+*/
+static void _sysname(char * smfid)
+{
+    void ** psa;           // PSA     =>   0 / 0x00
+    void ** cvt;           // FLCCVT  =>  16 / 0x10
+    void ** smca;          // CVTSMCA => 196 / 0xC4
+    void ** csd;           // CVT+660
+    void ** smcasid;       // SMCASID =>  16 / 0x10
+
+    psa  = 0;
+    cvt  = psa[4];         //  16
+    smca = cvt[49];        // 196
+    smcasid =  smca + 4;   //  16
+    memcpy(smfid,smcasid,4);
+}
+
+
 /* This is a non UCB access version of obtaining DASD system info: */
 static long dirsupport () {
-    long   i;
+    long   i,j;
     FILE * fh;
+    char * volser;
+    char * unit;
+    char * comment;
+    //char * unit;
     char   line [81];
 
-    fh = fopen ("//DSN:SYS1.PARMLIB(VATLSTFF)", "rb");
+    fh = fopen (PARMLIB, "rb");
     if (fh == NULL) {
         return (1);
     }
 
+    j=0;
     while (fread (line, 1, 80, fh) != 0) {
+        j++;
 
-        // Add a sanity check..
-        if ((line [6] != ',') ||
-            (line [8] != ',') ||
-            (line[10] != ',') ||
-            (line[19] != ',')) {
-            continue; // ..forget this line and go on to the next.
+        if ( (line[0] == '#') || ( strchr(line, '=') != NULL) || strchr(line, ',') == NULL ) {
+           /* If it starts with a comment or has an equal sign skip it */
+           /* or its missing a comma we also skip it and readparms has already printed */
+           /* the error. */
+           continue ;
         }
 
-        strncpy (devices [numdevs], line, 6);
+        volser = strtok(line, ", ");
+        unit = strtok(NULL, ", ");
+        comment = strtok(NULL, ", ");
+
+        strncpy (devices [numdevs], volser, 6);
         i = 6;
         do {
             devices [numdevs][i--] = 0;
         } while (devices [numdevs][i] == ' ');
 
-        strncpy (units [numdevs], &(line [11]), 8);
+        strncpy (units [numdevs], unit, 8);
         i = 6;
         do {
             units [numdevs][i--] = 0;
@@ -191,6 +220,7 @@ static long readvtoc (char * device, char * unit, p_root rt) { // r is the newro
     char str [40];
     unsigned char b [96];
     char * t; // trim!
+
 
     p_root c = rt; // Current
     while (c->next)
