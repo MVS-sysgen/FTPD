@@ -243,4 +243,4 @@ Copy the file `FTPD.conf` to `SYS1.PARMLIB(FTPDPM00)`
 
 ### Launch FTPD
 
-You're all setup now you can launch FTPD with `/s ftpd,srvport=2121`
+You're all setup now you can launch FTPD with `/s ftpd` and read the messages on the hercules console
