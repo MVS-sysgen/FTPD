@@ -2673,7 +2673,7 @@ void main (int argc, char ** argv) {
                 _write2op (wtomsg);
                 strcpy (PASVADDR, option);
             } else if( stricmp (argument, "AUTHUSER") == 0 ) {
-                sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, PASVADDR);
+                sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, AUTH_USER);
                 _write2op (wtomsg);
                 strcpy (AUTH_USER, option);
             } else if( stricmp (argument, "DD") == 0 ) {
@@ -2691,7 +2691,7 @@ void main (int argc, char ** argv) {
                 }
             } else {
                 /* Unrocignized Argument */
-                sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
+                sprintf (wtomsg,ARG_ERROR, optind, argument, option);
                 _write2op (wtomsg);
             }
         }

@@ -40,10 +40,7 @@ you can edit the config file `SYS1.PARMLIB(FTPDPM00)`.
 
 **Custom Configuration File**
 
-If you want to use a custom configuration file you can use the procedure `FTPDCONF` in the
-hercules console: `/s FTPDCONF,PARMLIB=SYS2.PARMLIB(FTPDPRIV)`
-
-Or edit the procedure `SYS2.PROCLIB(FTPD)` and replace this:
+If you want to use a custom configuration file you can use edit the procedure `SYS2.PROCLIB(FTPD)` and replace this:
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K
@@ -172,13 +169,13 @@ This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the
 
 #### FTPDCONF
 
-This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` but can be changed with the `PARMLIB=` agument.
-For example you can change the config file use by using `/s FTPDCONF,PARMLIB=SYS2.PARMLIB(FTPDCONF1)`.
+This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` but can be changed by editing
+the line `PARMLIB=SYS1.PARMLIB(FTPDPM00)` replacing it with your custom parmlib.
 
 ```jcl
 //FTPDCONF EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPDCONF   PROC PARMLIB='SYS1.PARMLIB(FTPDPM00)'
+//FTPDCONF   PROC
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom parmlib
@@ -188,7 +185,7 @@ For example you can change the config file use by using `/s FTPDCONF,PARMLIB=SYS
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='PARMLIB=&PARMLIB DD=AAINTRDR'
+// PARM='PARMLIB=SYS1.PARMLIB(FTPDPM00) DD=AAINTRDR'
 //AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
 //STDOUT   DD SYSOUT=*
 @@
@@ -205,7 +202,7 @@ This launches FTPD with but allows the defaults and config file entries for `SRV
 ```jcl
 //FTPDPARM EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSER='IBMUSER'
+//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSR='IBMUSER'
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
@@ -214,7 +211,7 @@ This launches FTPD with but allows the defaults and config file entries for `SRV
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR AUTHUSER=&AUTHUSER'
+// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR AUTHUSER=&AUTHUSR'
 //AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
 //STDOUT   DD SYSOUT=*
 @@
