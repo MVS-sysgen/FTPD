@@ -73,7 +73,7 @@ The following arguments are supported:
 - **AUTHUSER** - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
 - **DD** - The name of a *required* DD name in the JCL. Currently used for an internal reader.
 
-The procedue `FTPDCONF` has been installed which allows for the argument `SRVPORT` and `AUTHUSER`.
+The procedue `FTPDPARM` has been installed which allows for the argument `SRVPORT` and `AUTHUSER`.
 
 ## Building from source
 
@@ -141,11 +141,11 @@ link library (most likely `SYS2.LINKLIB`):
   COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
 ```
 
-Then install FTPD procedures in `SYS2.PROCLIB`:
+Then install/place the following FTPD procedures in `SYS2.PROCLIB`:
 
 #### FTPD
 
-This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the default). Start with `/s FTPD`.
+This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the default). Use it with `/s FTPD`.
 
 ```jcl
 //FTPDPROC EXEC PGM=IEBGENER
@@ -171,7 +171,7 @@ This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the
 
 #### FTPDPARM
 
-This launches FTPD with but allows the defaults and config file entries for `SRVPORT` and `SRVIP` to be overridden. For example,
+This launches FTPD with but allows the defaults and config file entries for `SRVPORT` and `AUTHUSER` to be overridden. For example,
 `/s ftpdparm,srvport=54321`
 
 ```jcl
