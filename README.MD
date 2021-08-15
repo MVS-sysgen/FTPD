@@ -54,7 +54,7 @@ A seperate JCL procedure (`FTPDPARM`) has been made to parse parameters. It take
 
 ## Building from source
 
-See BUILD.md for instructions how to build from source.
+See [BUILD.md](source/build/BUILD.md) for instructions how to build from source.
 
 ## Manual Installation
 
