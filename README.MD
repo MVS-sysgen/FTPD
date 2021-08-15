@@ -13,6 +13,10 @@ install the FTPD server and start the server running on `localhost:2121`
 
 :exclamation: If you're not using MVS/CE you should follow the manual install.
 
+If you are updating from a previous install you must delete the entries for RAKF in
+`SYS1.SECURE.CNTL`, both `PROFILES` and `USERS`. Remove the FTPD user and the FACILITYFTPAUTH
+lines.
+
 ## Access
 
 Using this install everyone in the RAKF group `ADMIN` has access to use FTP. To allow users
