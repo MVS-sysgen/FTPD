@@ -46,6 +46,8 @@ FTPD     FTPD     12345678 N                                            00000100
 //SORTIN DD DSN=SYS1.SECURE.CNTL(PROFILES),DISP=SHR
 //       DD *
 FACILITYSVC244                                      FTPD    READ        00002900
+FACILITYFTPAUTH                                             NONE        00002210
+FACILITYFTPAUTH                                     ADMIN   READ        00002220
 /*
 //* Reload user/profile tables
 //RAKFUSER EXEC RAKFUSER

@@ -6,24 +6,40 @@ This FTP daemon requires RAKF to run. You must install RAKF for this FTP server 
 
 ## Automated Install
 
-If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) you can run the TSO command: `INSTALL FTPD` this
-will automatically install the FTPD server and start the server running on
-`localhost:2121`
+If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) This should be already installed.
 
-To enable the FTPD server after IPL run the command `/s ftpd`. To make changes to the configuration (ports, IP etc)
-you can edit the config file `SYS1.PARMLIB(FTPDPM00)`. If you have a custom configuration file you can
-edit the proc and replace
+If you want to reinstall you can run the TSO command: `INSTALL FTPD` this will automatically
+install the FTPD server and start the server running on `localhost:2121`
+
+## Access
+
+By default everyone in the RAKF group `ADMIN` has access to use FTP. To add users to FTP
+add the user or group to `SYS1.SECURE.CNTL(PROFILES)`, the line below allows members of
+the `USERS` group to access FTP:
+
+```
+FACILITYFTPAUTH                                     USERS   READ
+```
+
+:exclamation: RAKF sett
+
+## Operation
+
+To start the FTPD server after IPL run the command `/s ftpd` in the hercules console. To make changes to the configuration (ports, IP etc)
+you can edit the config file `SYS1.PARMLIB(FTPDPM00)`. If you have a custom configuration file you can edit the proc and replace
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K
 ```
 
-with
+with this, adding your own parmlib
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,
-//       PARM='PARMLIB=PLACE.WITH.PARMLIB(FTPPARMS)'
+//       PARM='PARMLIB=PLACE.WITH.PARMLIBS(FTPPARMS)'
 ```
+
+To stop the FTP server run the command `/p ftpd` or `/stop ftpd` on the hercules console.
 
 A seperate JCL procedure (`FTPDPARM`) has been made to parse parameters. It takes the following arguments:
 
@@ -31,9 +47,10 @@ A seperate JCL procedure (`FTPDPARM`) has been made to parse parameters. It take
 - SRVIP - The IP address of the hercules host machine to listen on. The default is 'any' which is the equivalent of 'all' or '0.0.0.0'.
 - PASVADR - IP address to return for passive mode, comma separated. The default is '127,0,0,1'. This address is used only if getsockname doesn't return a suitable value.
 - FAST - When set to `TRUE` Library Optimisation Extensions are enabled
+- AUTHUSER - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
 - DD - The name of a *required* DD name in the JCL. Currently used for an internal reader.
 
-:warning: If you're not using MVS/CE you should follow the manual install
+:exclamation: If you're not using MVS/CE you should follow the manual install.
 
 ## Building from source
 
@@ -190,7 +207,7 @@ You must add the FTPD user and group to RAKF in `SYS1.SECURE.CNTL(USERS)`
 
 :warning: make sure you pick a suitably random password not `RANDOM`
 
-:warning: RAKF users must be in alphabetical sort order
+:exclamation: RAKF users must be in alphabetical sort order
 
 ```
 # User   Group
@@ -208,7 +225,15 @@ adding the following to `SYS1.SECURE.CNTL(PROFILES)`
 FACILITYSVC244                                      FTPD    READ
 ```
 
-:warning: RAKF profiles must be in alphabetical order (i.e. FTPD should follow ADMIN)
+You also need to add the `FTPAUTH` resource to the facility class. The
+lines below block access to anyone not in the ADMIN group.
+
+:exclamation: RAKF profiles must be in alphabetical order (i.e. FTPAUTH should follow DIAG8)
+
+```
+FACILITYFTPAUTH                                             NONE
+FACILITYFTPAUTH                                     ADMIN   READ
+```
 
 Then update rakf from the hercules console with `/s rakfprof`
 

@@ -5,6 +5,25 @@
 //            REGION=8M,
 //            MSGLEVEL=(1,1),
 //            USER=IBMUSER,PASSWORD=SYS1
+//*********************************************************************
+//*
+//* Name: MAKEXCTL
+//*
+//* Desc: Assemble and link FTPD Wrapper
+//*
+//*********************************************************************
+//*
+//ASMCL   EXEC ASMFCL,PARM.ASM=(OBJ,NODECK,NOXREF),
+//        MAC1='SYS1.AMODGEN',MAC2='SYS2.MACLIB'
+//LKED.SYSLMOD DD DSN=SYS2.LINKLIB(FTPDXCTL),DISP=SHR
+//ASM.SYSIN DD *
+::a ../hlasm/FTPDXCTL.hlasm
+//*********************************************************************
+//*
+//* Assemble ASM programs FTPLOGIN,FTPLGOUT,FTPAUTH,FTPSU
+//* and send to punch card writer on device D
+//*
+//*********************************************************************
 //*
 //* First we assemple all the programs as one
 //*

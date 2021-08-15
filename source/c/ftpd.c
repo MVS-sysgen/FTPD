@@ -35,8 +35,9 @@ extern long __libc_osvm;
 
 #include <sockets.h>
 
-//#define debug_output 1
-
+#ifdef __DEBUG__
+#define debug_output 1
+#endif
 /*
 char * strupr (char * s) {
     long i;
@@ -65,6 +66,7 @@ char * strupr (char * s) {
 #define DEFAULT_PARMLIB "SYS1.PARMLIB(FTPDPM00)"
 #define DSNFMT "//DSN:%s"
 
+/* TODO: Add custom banners */
 #define WELCOME_MESSAGE  "%s FTP server (MVS 3.8j) ready"
 
 #define INIT_MESSAGE     "FTP000I Startup - FTPD Starting with %d arguments"
@@ -94,12 +96,11 @@ char * strupr (char * s) {
 #define GENERIC_WARNING   "FTP00GW - %s"
 #define GENERIC_ERROR     "FTP00GE - %s"
 
-#define AUTH_USER "HERC01"
-
 short  SERVER_PORT;
 char   SERVER_IP [16];
 char   *PARMLIB;
 char   *PARMLIB_PRINT;
+char   *AUTH_USER;
 
 struct tm * td;
 time_t lt;
@@ -2408,8 +2409,12 @@ static void ftp_sock_rcb (SOCKET sock, data_tag_ptr data) {
                 };
 
             } else if ((strcmp (cmd, "TERMINATE") == 0) && (strcmp (data->USER, AUTH_USER) == 0)) {
+                sprintf (wtomsg,GENERIC_MESSAGE,"Received shutdown request");
+                _write2op (wtomsg);
                 running = 0;
             } else if ((strcmp (cmd, "TERM") == 0) && (strcmp (data->USER, AUTH_USER) == 0)) {
+                sprintf (wtomsg,GENERIC_MESSAGE,"Received shutdown request");
+                _write2op (wtomsg);
                 running = 0;
             } else if (strcmp (cmd, "REFR") == 0) {
                 refresh ();
@@ -2558,6 +2563,8 @@ static long readparmlib () {
                 strcpy (SERVER_IP, parm);
             } else if( stricmp (conf, "PASVADR") == 0 ) {
                 strcpy (PASVADDR, parm);
+            } else if( stricmp (conf, "AUTHUSER") == 0 ) {
+                strcpy (AUTH_USER, parm);
             } else {
                 /* Error on line X in config file */
                 sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
@@ -2600,11 +2607,13 @@ void main (int argc, char ** argv) {
 
     PARMLIB = (char *)malloc (MAXDSN);
     PARMLIB_PRINT = (char *)malloc (MAXDSN);
+    AUTH_USER = (char *)malloc (9);
 
     // Setup the defaults
 
     sprintf(SERVER_IP, DEFAULT_SRVIP);
     sprintf(PASVADDR, DEFAULT_PASVADDR);
+    sprintf(AUTH_USER, '\0');
     SERVER_PORT = DEFAULT_SRVPORT;
 
     // Read config files and change the values if appropriate
@@ -2663,6 +2672,10 @@ void main (int argc, char ** argv) {
                 sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, PASVADDR);
                 _write2op (wtomsg);
                 strcpy (PASVADDR, option);
+            } else if( stricmp (argument, "AUTHUSER") == 0 ) {
+                sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, PASVADDR);
+                _write2op (wtomsg);
+                strcpy (AUTH_USER, option);
             } else if( stricmp (argument, "DD") == 0 ) {
                 // DD names that FTP can access
                 // Can be used for internal reader etc
