@@ -1,4 +1,0 @@
-FTPLOGIN rac_user_login
-FTPLGOUT rac_user_logout
-FTPAUTH rac_ftp_auth
-FTPSU rac_switch_user

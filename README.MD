@@ -6,19 +6,34 @@ This FTP daemon requires RAKF to run. You must install RAKF for this FTP server 
 
 ## Automated Install
 
-<<<<<<< Updated upstream
-If you're using [SYSGEN](https://github.com/MVS-sysgen/sysgen) but are running the verson without software installed you can run the TSO command: `INSTALL FTPD` this will automatically install the FTPD server and start the server running on `localhost:2121`. Otherwise its likely already installed, check in `SYS2.PROCLIB` for `FTPD`. 
-
-## Starting the FTP server
-=======
 If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) you can run the TSO command: `INSTALL FTPD` this
 will automatically install the FTPD server and start the server running on
 `localhost:2121`
->>>>>>> Stashed changes
 
-To enable the FTPD server after IPL run the command `/s ftpd,srvport=2121`
+To enable the FTPD server after IPL run the command `/s ftpd`. To make changes to the configuration (ports, IP etc)
+you can edit the config file `SYS1.PARMLIB(FTPDPM00)`. If you have a custom configuration file you can
+edit the proc and replace
 
-:warning: If you're not using SYSGEN you should follow the manual install
+```
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K
+```
+
+with
+
+```
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,
+//       PARM='PARMLIB=PLACE.WITH.PARMLIB(FTPPARMS)'
+```
+
+A seperate JCL procedure (`FTPDPARM`) has been made to parse parameters. It takes the following arguments:
+
+- SRVPORT - The port that the FTPD server will listen on.
+- SRVIP - The IP address of the hercules host machine to listen on. The default is 'any' which is the equivalent of 'all' or '0.0.0.0'.
+- PASVADR - IP address to return for passive mode, comma separated. The default is '127,0,0,1'. This address is used only if getsockname doesn't return a suitable value.
+- FAST - When set to `TRUE` Library Optimisation Extensions are enabled
+- DD - The name of a *required* DD name in the JCL. Currently used for an internal reader.
+
+:warning: If you're not using MVS/CE you should follow the manual install
 
 ## Building from source
 
@@ -86,21 +101,26 @@ link library (most likely `SYS2.LINKLIB`):
   COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
 ```
 
-Then install the `FTPD_PROC.jcl` procedure in `SYS2.PROCLIB`:
+Then install the FTPD procedures in `SYS2.PROCLIB`:
+
+#### FTPD
+
+This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the default). Start with `/s FTPD`.
 
 ```jcl
-//FTPDDEVC EXEC PGM=IEBGENER
+//FTPDPROC EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPD   PROC PASVADR='127,0,0,1',SRVIP='any',SRVPORT=21021
+//FTPD   PROC
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC
-//* To use: in Hercules console issue /s FTPD to start FTP server on
-//*         on port 21021
+//* To use: in Hercules console issue /s FTPD to start FTP server
+//*
+//* To change settings edit config file SYS1.PARMLIB(FTPDPM00)
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='&PASVADR &SRVPORT &SRVIP //DDN:AAINTRDR'
+// PARM='DD=AAINTRDR'
 //AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
 //STDOUT   DD SYSOUT=*
 @@
@@ -109,13 +129,66 @@ Then install the `FTPD_PROC.jcl` procedure in `SYS2.PROCLIB`:
 //SYSIN    DD DUMMY
 ```
 
-Before proceeding you need to also make changes to RAKF and parmlibs
+#### FTPDCONF
+
+This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` but can be changed with the `PARMLIB=` agument.
+For example you can change the config file use by using `/s FTPDCONF,PARMLIB=SYS2.PARMLIB(FTPDCONF1)`.
+
+```jcl
+//FTPDCONF EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDCONF   PROC PARMLIB='SYS1.PARMLIB(FTPDPM00)'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom parmlib
+//* To use: in Hercules console issue
+//*    /s FTPD,parmlib=sys2.parmlib(file)
+//* to start FTP server with custom config file
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='PARMLIB=&PARMLIB DD=AAINTRDR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDCONF)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+```
+
+#### FTPDPARM
+
+This launches FTPD with but allows the defaults and config file entries for `SRVPORT` and `SRVIP` to be overridden. For example,
+`/s ftpdparm,srvport=54321,srvip=10.10.10.10`
+
+```jcl
+//FTPDPARM EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDCONF   PROC SRVPORT='2121',SRVIP='any'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
+//* To use: in Hercules console issue
+//*    /s FTPD,srvport=54321,srvip=10.10.10.10
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDPARM)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+```
 
 ### RAKF User
 
+Before proceeding you need to also make changes to RAKF and parmlibs
+
 You must add the FTPD user and group to RAKF in `SYS1.SECURE.CNTL(USERS)`
 
-:warning: make sure you pick a suitably random password no `RANDOM`
+:warning: make sure you pick a suitably random password not `RANDOM`
 
 :warning: RAKF users must be in alphabetical sort order
 
@@ -124,7 +197,7 @@ You must add the FTPD user and group to RAKF in `SYS1.SECURE.CNTL(USERS)`
 FTPD     FTPD     RANDOM   N
 ```
 
-Then update rakf from the console with `/s rakfuser`.
+Then update rakf from the hercules console with `/s rakfuser`.
 
 ### RAKF Profile
 
@@ -137,22 +210,11 @@ FACILITYSVC244                                      FTPD    READ
 
 :warning: RAKF profiles must be in alphabetical order (i.e. FTPD should follow ADMIN)
 
-Then update rakf from the console with `/s rakfprof`
+Then update rakf from the hercules console with `/s rakfprof`
 
-### SYS1.PARMLIB(VATLSTFF)
+### SYS1.PARMLIB(FTPDPM00)
 
-Copy `SYS1.PARMLIB(VATLST00)` to `SYS1.PARMLIB(VATLSTFF)` and
-remove any devices you don't want the FTP deamon to have access to.
-
-For example:
-
-```
-MVSRES,0,2,3350    ,Y        SYSTEM RESIDENCE (PRIVATE)
-MVS000,0,2,3350    ,Y        SYSTEM DATASETS (PRIVATE)
-PUB000,1,2,3380    ,N        PUBLIC DATASETS (PRIVATE)
-PUB001,1,2,3390    ,N        PUBLIC DATASETS (PRIVATE)
-SYSCPK,1,2,3350    ,N        COMPILER/TOOLS (PRIVATE)
-```
+Copy the file `FTPD.conf` to `SYS1.PARMLIB(FTPDPM00)`
 
 ### Launch FTPD
 
