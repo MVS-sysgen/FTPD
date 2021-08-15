@@ -6,51 +6,70 @@ This FTP daemon requires RAKF to run. You must install RAKF for this FTP server 
 
 ## Automated Install
 
-If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) This should be already installed.
+If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) this should be already installed.
 
 If you want to reinstall you can run the TSO command: `INSTALL FTPD` this will automatically
 install the FTPD server and start the server running on `localhost:2121`
 
+:exclamation: If you're not using MVS/CE you should follow the manual install.
+
 ## Access
 
-Using this install everyone in the RAKF group `ADMIN` has access to use FTP. To add users to FTP
-add the user or group to `SYS1.SECURE.CNTL(PROFILES)`, the line below allows members of
-the `USERS` group to access FTP:
+Using this install everyone in the RAKF group `ADMIN` has access to use FTP. To allow users
+access to FTP add the user or group to the **FTPAUTH** resource in the FACILITY class
+in `SYS1.SECURE.CNTL(PROFILES)`. Adding the example below would allow anyone in the
+USERS group access to FTP:
 
 ```
 FACILITYFTPAUTH                                     USERS   READ
 ```
 
-:exclamation: RAKF profiles must be in alphabetical order
+:exclamation: When adding RAKF profiles they must be in alphabetical order
 
 ## Operation
 
-To start the FTPD server after IPL run the command `/s ftpd` in the hercules console. To make changes to the configuration (ports, IP etc)
-you can edit the config file `SYS1.PARMLIB(FTPDPM00)`. If you have a custom configuration file you can edit the proc and replace
+**Startup/Shutdown**
+
+To start the FTPD server after IPL run the command `/s ftpd` in the hercules console. To stop the FTP
+server run the command `/p ftpd` or `/stop ftpd` on the hercules console. To make changes to the configuration (ports, IP etc)
+you can edit the config file `SYS1.PARMLIB(FTPDPM00)`.
+
+**Custom Configuration File**
+
+If you want to use a custom configuration file you can use the procedure `FTPDCONF` in the
+hercules console: `/s FTPDCONF,PARMLIB=SYS2.PARMLIB(FTPDPRIV)`
+
+Or edit the procedure `SYS2.PROCLIB(FTPD)` and replace this:
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K
 ```
 
-with this, adding your own parmlib
+with this, adding your own parmlib:
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,
 //       PARM='PARMLIB=PLACE.WITH.PARMLIBS(FTPPARMS)'
 ```
 
-To stop the FTP server run the command `/p ftpd` or `/stop ftpd` on the hercules console.
+**FTPD Arguments**
 
-A seperate JCL procedure (`FTPDPARM`) has been made to parse parameters. It takes the following arguments:
+FTPD can take several arguments. These arguments override whatever the setting in in the configuration file and they
+can be in any order. To use them in JCL you use the `PARM=` field. For example, to use port 54321 your JCL would look like:
 
-- SRVPORT - The port that the FTPD server will listen on.
-- SRVIP - The IP address of the hercules host machine to listen on. The default is 'any' which is the equivalent of 'all' or '0.0.0.0'.
-- PASVADR - IP address to return for passive mode, comma separated. The default is '127,0,0,1'. This address is used only if getsockname doesn't return a suitable value.
-- FAST - When set to `TRUE` Library Optimisation Extensions are enabled
-- AUTHUSER - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
-- DD - The name of a *required* DD name in the JCL. Currently used for an internal reader.
+```
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,
+//       PARM='SRVIP=54321'
+```
 
-:exclamation: If you're not using MVS/CE you should follow the manual install.
+The following arguments are supported:
+
+- **SRVPORT** - The port that the FTPD server will listen on.
+- **SRVIP** - The IP address of the hercules host machine to listen on. The default is 'any' which is the equivalent of 'all' or '0.0.0.0'.
+- **PASVADR** - IP address to return for passive mode, comma separated. The default is '127,0,0,1'. This address is used only if getsockname doesn't return a suitable value.
+- **FAST** - When set to `TRUE` Library Optimisation Extensions are enabled
+- **AUTHUSER** - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
+- **DD** - The name of a *required* DD name in the JCL. Currently used for an internal reader.
 
 ## Building from source
 
@@ -118,7 +137,7 @@ link library (most likely `SYS2.LINKLIB`):
   COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
 ```
 
-Then install the FTPD procedures in `SYS2.PROCLIB`:
+Then install an FTPD procedures in `SYS2.PROCLIB`:
 
 #### FTPD
 
@@ -159,7 +178,7 @@ For example you can change the config file use by using `/s FTPDCONF,PARMLIB=SYS
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom parmlib
 //* To use: in Hercules console issue
-//*    /s FTPD,parmlib=sys2.parmlib(file)
+//*    /s FTPDCONF,parmlib=sys2.parmlib(file)
 //* to start FTP server with custom config file
 //*
 //********************************************************************
@@ -181,16 +200,16 @@ This launches FTPD with but allows the defaults and config file entries for `SRV
 ```jcl
 //FTPDPARM EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPDCONF   PROC SRVPORT='2121',SRVIP='any'
+//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSER='IBMUSER'
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
 //* To use: in Hercules console issue
-//*    /s FTPD,srvport=54321,srvip=10.10.10.10
+//*    /s FTPDPARM,srvport=54321,srvip=10.10.10.10
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR'
+// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR AUTHUSER=&AUTHUSER'
 //AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
 //STDOUT   DD SYSOUT=*
 @@

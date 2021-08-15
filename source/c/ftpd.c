@@ -60,8 +60,8 @@ char * strupr (char * s) {
 #define DEFAULT_SRVPORT 21
 #define DEFAULT_PASVADDR "127,0,0,1"
 
-#define FAKE_USER  "user"
-#define FAKE_GROUP "group"
+#define FAKE_USER  "MVSCE"
+#define FAKE_GROUP "MVSCE"
 
 #define DEFAULT_PARMLIB "SYS1.PARMLIB(FTPDPM00)"
 #define DSNFMT "//DSN:%s"

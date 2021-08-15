@@ -22,14 +22,14 @@ Shell commands should all be run from withing the `FTPD/source/build/` folder.
     - Install rdrprep with `make` and `sudo make install`
 3) Generate new JCL to assemble the FTP hlasm programs:`rdrprep --print 01_ftprakf_asm.template |grep -v getASCIIline > 01_ftprakf_asm.jcl`
     - This will generate the file `01_ftprakf_asm.jcl` which assembles all asm programs in [hlasm](../hlasm)
+    - When we submit this job we it will output to the punch card writer
     - This step also assembles **FTPDXCTL** and places it in `SYS2.LINKLIB`
-4) Change the punch output file and folder by typing the following on the hercules console `detach d` followed by `attach d 3525 ../SOFTWARE/FTPD/source/build/ftpdrakf.punch ebcdic`
-    - When we submit the job we just generated
+4) Change the punch output file and folder by typing the following on the hercules console `detach d` and enter followed by `attach d 3525 ../SOFTWARE/FTPD/source/build/ftpdrakf.punch ebcdic`
 5) Then submit `01_assemble_ftp_objects.jcl` to the socket reader `cat 01_ftprakf_asm.jcl | ncat --send-only -w1 plex.local 3505`
     - Each step should complete with `00000`.
     - When you see `/ $HASP150 MAKEFTPD ON PUNCH1          34 CARDS` in the hercules console type: `/$s punch1`, this will place the assembled binary in `../SOFTWARE/FTPD/ftpdrakf.punch`
 6) Detach the punch card now in the hercules console: `detach d`
-7) The punch writter adds spacers to the beginning and ends of files. To remove the `ftpdrakf.punch` header and footer you can use either of the following linux commands:
+7) The punch writter as configured adds a seperator to the beginning and ends of files. To remove the `ftpdrakf.punch` header and footer you can use either of the following linux commands:
     - `dd if=ftpdrakf.punch bs=1 skip=160 count=2720 of=ftpdrac.pch` (where `count=` is the size of `ftpdrakf.punch` in bytes minus 240)
     - `tail -c +161 ftpdrakf.punch |head -c -80 > ftpdrac.pch`
 8) Use `objscan` from jcc to replace HLASM names: `./jcc/objscan ftpdrac.pch objscan_input.nam ftpdrac.obj`
@@ -38,7 +38,7 @@ Shell commands should all be run from withing the `FTPD/source/build/` folder.
 9) Compile `ftpd.c` with jcc: `./jcc/jcc -I./jcc/include -I../c -D__MVS_ -o -list=list.out ../c/ftpd.c`
     - It should complete with `JCC-RC:0`
     - This will create the file `ftpd.obj`
-    - :exclamation: To enable debug output (which prints to SYSTOUT) add `-D__DEBUG__` to the command above
+    - :exclamation: To enable debug output (which prints to SYSTOUT) add `-D__DEBUG__` to the command above after `-D__MVS_`
 10) Use `prelink` to link the object: `./jcc/prelink -r jcc/objs ftpd.load ftpd.obj ftpdrac.obj`
     - It should completed with `PLK-RC:0`
     - This creates `ftpd.load` which is our assembled program ready to link in MVS
@@ -53,7 +53,7 @@ Going forward if you only edit `ftpd.c`/`mvsdirs.h` you only need to do the **bo
 
 ### Launching FTPD
 
-Plase the following JCL in `SYS2.PROCLIB(FTDDEV)` and run from the hercules console with `/s ftpddev`:
+Place the following JCL in `SYS2.PROCLIB(FTDDEV)` and run from the hercules console with `/s ftpddev` (it can be stopped with `/p ftpddev`):
 
 ```jcl
 //FTPDDEV   PROC
@@ -61,7 +61,7 @@ Plase the following JCL in `SYS2.PROCLIB(FTDDEV)` and run from the hercules cons
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC
 //* To use: in Hercules console issue /s FTPDDEV to start FTP server
-//*         on port 2121
+//*         on the port configure in SYS1.PARMLIB(FTPDPM00)
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,

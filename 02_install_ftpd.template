@@ -87,6 +87,64 @@
 //SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPD)
 //SYSPRINT DD SYSOUT=*
 //SYSIN    DD DUMMY
+//* Adds FTPDCONF
+//FTPDCONF EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDCONF   PROC PARMLIB='SYS1.PARMLIB(FTPDPM00)'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom parmlib
+//* To use: in Hercules console issue
+//*    /s FTPD,parmlib=sys2.parmlib(file)
+//* to start FTP server with custom config file
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='PARMLIB=&PARMLIB DD=AAINTRDR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDCONF)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//* Adds FTPDCONF
+//FTPDPARM EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDCONF   PROC SRVPORT='2121',SRVIP='any'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
+//* To use: in Hercules console issue
+//*    /s FTPDCONF,srvport=54321,srvip=10.10.10.10
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDPARM)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//* Adds FTPDPARM
+//FTPDPARM EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSER='IBMUSER'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
+//* To use: in Hercules console issue
+//*    /s FTPDPARM,srvport=54321,srvip=10.10.10.10
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR AUTHUSER=&AUTHUSER'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDPARM)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
 //*
 //* Add FTPDPM00 to SYS1.PARMLIB
 //*
