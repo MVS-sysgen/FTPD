@@ -54,12 +54,13 @@ with this, adding your own parmlib:
 
 **FTPD Arguments**
 
-FTPD can take several arguments. These arguments override whatever the setting in in the configuration file and they
-can be in any order. To use them in JCL you use the `PARM=` field. For example, to use port 54321 your JCL would look like:
+FTPD can take several arguments. These arguments override whatever the setting is in the configuration file and they
+can be in any order. To use them in JCL you use the `PARM=` field. For example, to use port 54321  and change the
+ip address the server listens on your JCL would look like:
 
 ```
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=8192K,
-//       PARM='SRVIP=54321'
+//       PARM='SRVIP=192.168.0.5 SRVPORT=54321'
 ```
 
 The following arguments are supported:

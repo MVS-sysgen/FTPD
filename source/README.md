@@ -1,4 +1,4 @@
-# FTPD Sourcecode
+# FTPD Source Code
 
 These folders contain the source code for the RAKF enabled FTPD server for MVS 3.8j.
 
