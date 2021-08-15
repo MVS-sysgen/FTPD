@@ -145,7 +145,7 @@ Then install/place the following FTPD procedures in `SYS2.PROCLIB`:
 
 #### FTPD
 
-This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the default). Use it with `/s FTPD`.
+This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the default).
 
 ```jcl
 //FTPDPROC EXEC PGM=IEBGENER
