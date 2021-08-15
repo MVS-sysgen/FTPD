@@ -1,0 +1,42 @@
+//MAKEFTPD JOB (FTPD),
+//            'Make FTP Daemon',
+//            CLASS=A,
+//            MSGCLASS=A,
+//            REGION=8M,
+//            MSGLEVEL=(1,1),
+//            USER=IBMUSER,PASSWORD=SYS1
+//*
+//* First we assemple all the programs as one
+//*
+//FTPLOGIN EXEC ASMFC,PARM.ASM=(OBJ,NODECK),MAC1='SYS2.MACLIB',
+//         MAC2='SYS1.AMODGEN'
+//ASM.SYSIN DD *
+::a FTPLOGIN.hlasm
+/*
+//ASM.SYSGO DD DSN=&&OBJ,DISP=(,PASS),SPACE=(TRK,3),UNIT=VIO,
+//        DCB=(RECFM=FB,LRECL=80,BLKSIZE=3200)
+//FTPLGOUT EXEC ASMFC,PARM.ASM=(OBJ,NODECK),MAC1='SYS2.MACLIB',
+//         MAC2='SYS1.AMODGEN'
+//ASM.SYSIN DD *
+::a FTPLGOUT.hlasm
+/*
+//ASM.SYSGO DD DSN=&&OBJ,DISP=(MOD,PASS)
+//FTPAUTH  EXEC ASMFC,PARM.ASM=(OBJ,NODECK),MAC1='SYS2.MACLIB',
+//         MAC2='SYS1.AMODGEN'
+//ASM.SYSIN DD *
+::a FTPAUTH.hlasm
+/*
+//ASM.SYSGO DD DSN=&&OBJ,DISP=(MOD,PASS)
+//FTPSU    EXEC ASMFC,PARM.ASM=(OBJ,NODECK),MAC1='SYS2.MACLIB',
+//         MAC2='SYS1.AMODGEN'
+//ASM.SYSIN DD *
+::a FTPSU.hlasm
+/*
+//ASM.SYSGO DD DSN=&&OBJ,DISP=(MOD,PASS)
+//* Now to output the temp dataset &&OBJ to Class B which is the
+//* punch out (pch00d.txt or changed to ftpdrakf.punch using)
+//PUNCHOUT EXEC PGM=IEBGENER
+//SYSIN    DD DUMMY
+//SYSUT1   DD DSN=&&OBJ,DISP=SHR
+//SYSUT2   DD SYSOUT=B
+//SYSPRINT DD SYSOUT=*

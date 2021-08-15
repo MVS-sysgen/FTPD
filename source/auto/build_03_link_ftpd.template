@@ -1,0 +1,14 @@
+//LINKFTPD JOB (FTPD),
+//            'Make FTP Daemon',
+//            CLASS=A,
+//            MSGCLASS=A,
+//            REGION=8M,
+//            MSGLEVEL=(1,1),
+//            USER=IBMUSER,PASSWORD=SYS1
+//LKED     EXEC PGM=IEWL,PARM='NCAL,MAP,LIST,XREF,NORENT'
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(5,2))
+//SYSPRINT DD SYSOUT=*
+//SYSLMOD  DD DSN=SYS2.LINKLIB(FTPD),DISP=SHR
+//SYSLIN   DD DATA,DLM=$$
+::E ftpd.load
+$$

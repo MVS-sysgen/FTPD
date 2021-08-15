@@ -1,0 +1,20 @@
+# Assembling FTPD RAKF hlasm
+/$CA
+$HASP000 OK;sh ./submit.sh ../SOFTWARE/FTPD/build_02_assemble_link_FTPDXCTL.jcl
+/ $HASP395 FTPDXCTL ENDED;detach c
+attach c 3505 3505 sockdev ebcdic
+attach c 3505 3505 sockdev ebcdic
+detach d
+attach d 3525 ../SOFTWARE/FTPD/ftpdrakf.punch ebcdic
+sh ./submit.sh ../SOFTWARE/FTPD/build_01_assemble_ftp_objects.ebcdic.jcl
+/ $HASP150 MAKEFTPD ON PUNCH1;/$s punch1
+sh bash ../SOFTWARE/FTPD/build_02.sh
+Build 03 Completed;sh ./submit.sh ../SOFTWARE/FTPD/build_03_link_ftpd.ebcdic.jcl
+/ $HASP395 LINKFTPD ENDED;detach c
+attach c 3505 3505 sockdev ascii
+attach c 3505 3505 sockdev ascii
+detach d
+attach d 3525 pch00d.txt ascii
+sh ./submit.sh ../SOFTWARE/FTPD/build_04_install_ftpd_proc.jcl
+/ $HASP395 INSTPROC ENDED;sh ./submit.sh ../SOFTWARE/FTPD/build_05_build_release_xmi.jcl
+/ $HASP395 PKGEFTPD ENDED;/$VS,'S ZTIMER'
