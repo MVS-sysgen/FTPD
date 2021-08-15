@@ -13,7 +13,7 @@ install the FTPD server and start the server running on `localhost:2121`
 
 ## Access
 
-By default everyone in the RAKF group `ADMIN` has access to use FTP. To add users to FTP
+Using this install everyone in the RAKF group `ADMIN` has access to use FTP. To add users to FTP
 add the user or group to `SYS1.SECURE.CNTL(PROFILES)`, the line below allows members of
 the `USERS` group to access FTP:
 
@@ -21,7 +21,7 @@ the `USERS` group to access FTP:
 FACILITYFTPAUTH                                     USERS   READ
 ```
 
-:exclamation: RAKF sett
+:exclamation: RAKF profiles must be in alphabetical order
 
 ## Operation
 
