@@ -1,0 +1,12 @@
+**/reader.jcl
+**/ftpd.obj
+**/ftpdrakf.punch
+**/ftpd_rac.pch
+**/output.load
+**/ftpdrac.pch
+**/list.out
+01_update_rakf.jcl
+02_install_ftpd.jcl
+**/jcc/**
+**/01_assemble_ftp_objects.jcl
+**/01_ftprakf_asm.jcl
