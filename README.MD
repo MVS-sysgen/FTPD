@@ -73,6 +73,8 @@ The following arguments are supported:
 - **AUTHUSER** - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
 - **DD** - The name of a *required* DD name in the JCL. Currently used for an internal reader.
 
+The procedue `FTPDCONF` has been installed which allows for the argument `SRVPORT` and `AUTHUSER`.
+
 ## Building from source
 
 See [BUILD.md](source/build/BUILD.md) for instructions how to build from source.
@@ -139,7 +141,7 @@ link library (most likely `SYS2.LINKLIB`):
   COPY INDD=((SYSUT1,R)),OUTDD=SYSUT2
 ```
 
-Then install an FTPD procedures in `SYS2.PROCLIB`:
+Then install FTPD procedures in `SYS2.PROCLIB`:
 
 #### FTPD
 
@@ -167,51 +169,24 @@ This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` (the
 //SYSIN    DD DUMMY
 ```
 
-#### FTPDCONF
-
-This launches FTPD with the config file located at `SYS1.PARMLIB(FTPDPM00)` but can be changed by editing
-the line `PARMLIB=SYS1.PARMLIB(FTPDPM00)` replacing it with your custom parmlib.
-
-```jcl
-//FTPDCONF EXEC PGM=IEBGENER
-//SYSUT1   DD DATA,DLM=@@
-//FTPDCONF   PROC
-//********************************************************************
-//*
-//* MVS3.8j RAKF Enabled FTP server PROC with custom parmlib
-//* To use: in Hercules console issue
-//*    /s FTPDCONF,parmlib=sys2.parmlib(file)
-//* to start FTP server with custom config file
-//*
-//********************************************************************
-//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='PARMLIB=SYS1.PARMLIB(FTPDPM00) DD=AAINTRDR'
-//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
-//STDOUT   DD SYSOUT=*
-@@
-//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDCONF)
-//SYSPRINT DD SYSOUT=*
-//SYSIN    DD DUMMY
-```
-
 #### FTPDPARM
 
 This launches FTPD with but allows the defaults and config file entries for `SRVPORT` and `SRVIP` to be overridden. For example,
-`/s ftpdparm,srvport=54321,srvip=10.10.10.10`
+`/s ftpdparm,srvport=54321`
 
 ```jcl
 //FTPDPARM EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSR='IBMUSER'
+//FTPDPARM PROC SRVPORT='2121',AUTHUSR='IBMUSER'
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
 //* To use: in Hercules console issue
-//*    /s FTPDPARM,srvport=54321,srvip=10.10.10.10
+//*    /s FTPDPARM,srvport=54321
 //*
 //********************************************************************
 //FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
-// PARM='SRVPORT=&SRVPORT SRVIP=&SRVIP DD=AAINTRDR AUTHUSER=&AUTHUSR'
+// PARM='SRVPORT=&SRVPORT DD=AAINTRDR AUTHUSER=&AUTHUSR'
 //AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
 //STDOUT   DD SYSOUT=*
 @@

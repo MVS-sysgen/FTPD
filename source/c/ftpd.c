@@ -77,7 +77,7 @@ char * strupr (char * s) {
 #define PARMLIB_MESSAGE  "FTP002I Startup - Reading parmlib %s"
 #define DEVICE_MESSAGES  "FTP003I Startup - Reading DASD %s,%s"
 #define DATASET_MESSAGE  "FTP004I Startup - %d datasets"
-#define SOCKET_MESSAGE   "FTP005I Startup Complete - FTP server listening on port: %d"
+#define SOCKET_MESSAGE   "FTP005I Startup Complete - FTP server listening on port: %u"
 #define SHUTDOWN_MESSAGE "FTP006I Shutdown complete"
 /* Error messages */
 #define ERROR_MESSAGES   "FTP001E Error - %s"
