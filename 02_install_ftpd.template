@@ -90,7 +90,7 @@
 //* Adds FTPDPARM
 //FTPDPARM EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-//FTPDPARM PROC SRVPORT='2121',SRVIP='any',AUTHUSR='IBMUSER'
+//FTPDPARM PROC SRVPORT='2121',AUTHUSR='IBMUSER'
 //********************************************************************
 //*
 //* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
