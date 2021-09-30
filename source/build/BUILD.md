@@ -25,7 +25,7 @@ Shell commands should all be run from withing the `FTPD/source/build/` folder.
     - When we submit this job we it will output to the punch card writer
     - This step also assembles **FTPDXCTL** and places it in `SYS2.LINKLIB`
 4) Change the punch output file and folder by typing the following on the hercules console `detach d` and enter followed by `attach d 3525 ../SOFTWARE/FTPD/source/build/ftpdrakf.punch ebcdic`
-5) Then submit `01_assemble_ftp_objects.jcl` to the socket reader `cat 01_ftprakf_asm.jcl | ncat --send-only -w1 plex.local 3505`
+5) Then submit `01_assemble_ftp_objects.jcl` to the socket reader `cat 01_ftprakf_asm.jcl | ncat --send-only -w1 127.0.0.1 3505`
     - Each step should complete with `00000`.
     - When you see `/ $HASP150 MAKEFTPD ON PUNCH1          34 CARDS` in the hercules console type: `/$s punch1`, this will place the assembled binary in `../SOFTWARE/FTPD/ftpdrakf.punch`
 6) Detach the punch card now in the hercules console: `detach d`
