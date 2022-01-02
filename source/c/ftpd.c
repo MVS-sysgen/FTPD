@@ -1994,10 +1994,10 @@ static long get_cmd_args (char * line, char * cmd, char * args) {
     a = strstr (line, " ");
     if (a) {
         a [0] = 0;
-        strcpy (cmd, line);
+        strncpy (cmd, line, PATHLENGTH);
         a [0] = ' ';
         a++;
-        strcpy (args, a);
+        strncpy (args, a, PATHLENGTH);
     } else {
         strncpy (cmd, line, 39);
         cmd [39] = 0;
