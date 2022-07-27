@@ -9,7 +9,7 @@ which automates all the steps below.
 To use it you can run the following commands from the root folder of this repo:
 
 1) First build the FTPD XMI and install files: `docker build --tag ftpd:builder .`
-2) Then mount the local folder inside the docker container: `docker run -it --entrypoint /bin/bash -v $(pwd):/project mainframed767/ftpd:builder`
+2) Then mount the local folder inside the docker container: `docker run -it --entrypoint /bin/bash -v $(pwd):/project ftpd:builder`
 3) Once inside the container copy the files to `/project`: `cp * /project`
 
 ## Before You Start
