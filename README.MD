@@ -6,16 +6,11 @@ This FTP daemon requires RAKF to run. You must install RAKF for this FTP server 
 
 ## Automated Install
 
-If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) this should be already installed.
-
-If you want to reinstall you can run the TSO command: `INSTALL FTPD` this will automatically
-install the FTPD server and start the server running on `localhost:2121`
+If you're using [MVS/CE](https://github.com/MVS-sysgen/sysgen) you can install this with
+the command `RX MVP INSTALL FTPD`. Once completed you can start the FTPD server on port
+2121 in the hercules console with `/S FTPD`.
 
 :exclamation: If you're not using MVS/CE you should follow the manual install.
-
-If you are updating from a previous install you must delete the entries for RAKF in
-`SYS1.SECURE.CNTL`, both `PROFILES` and `USERS`. Remove the FTPD user, the FACILITYFTPAUTH
-lines and the 'FACILITYSVC244 ... FTPD' line.
 
 ## Access
 
@@ -70,10 +65,10 @@ The following arguments are supported:
 - **SRVIP** - The IP address of the hercules host machine to listen on. The default is 'any' which is the equivalent of 'all' or '0.0.0.0'.
 - **PASVADR** - IP address to return for passive mode, comma separated. The default is '127,0,0,1'. This address is used only if getsockname doesn't return a suitable value.
 - **FAST** - When set to `TRUE` Library Optimisation Extensions are enabled
-- **AUTHUSER** - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
+- **AUTHUSR** - If set, this user can use `quote term`/`quote terminate` to shutdown the FTP server remotely
 - **DD** - The name of a *required* DD name in the JCL. Currently used for an internal reader.
 
-The procedue `FTPDPARM` has been installed which allows for the argument `SRVPORT` and `AUTHUSER`.
+The procedue `FTPDPARM` has been installed which allows for the argument `SRVPORT` and `AUTHUSR`.
 
 ## Building from source
 
@@ -83,7 +78,7 @@ See [BUILD.md](source/build/BUILD.md) for instructions how to build from source.
 
 ### Uploading/Installing needed files
 
-Upload the XMI file `FTPD.xmi` and receive the file with RECV370 (modify the JCL as needed).
+Upload the XMI file `FTPD.XMI` and receive the file with RECV370 (modify the JCL as needed).
 
 ```jcl
 //RECVFTPD JOB (TSO),'Recieve XMI',CLASS=A,MSGCLASS=A

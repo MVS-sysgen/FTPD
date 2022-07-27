@@ -1,10 +1,31 @@
-//RECVFTPD JOB (FTPD),
-//            'FTPD XMI',
+# generates the JCL needed to build the HLASM files
+
+import sys
+import random
+import string
+
+if len(sys.argv) == 1:
+    print("usage: {} /path/to/FTPD.conf".format(sys.argv[0]))
+    sys.exit(-1)
+
+def randomStringwithDigitsAndSymbols(stringLength=10):
+    """Generate a random string of letters, digits and special characters """
+    password_characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(password_characters) for i in range(stringLength))
+
+
+install_jcl = '''//INSTALL JOB (FTPD),
+//            'FTPD INSTALL',
 //            CLASS=A,
 //            MSGCLASS=A,
 //            REGION=8M,
-//            MSGLEVEL=(1,1),
-//            USER=IBMUSER,PASSWORD=SYS1
+//            MSGLEVEL=(1,1)
+//*
+//* Installs FTPD/FTPDXCTL to SYS2.LINKLIB
+//* Adds FTPDPM00 to SYS1.PARMLIB
+//* Adds FTPD procedure to SYS2.PROCLIB
+//* Adds the 
+//*
 //FTDELETE EXEC PGM=IDCAMS,REGION=1024K
 //SYSPRINT DD  SYSOUT=A
 //SYSIN    DD  *
@@ -41,7 +62,7 @@
 //*
 //RECV370 EXEC PGM=RECV370
 //STEPLIB  DD  DISP=SHR,DSN=SYSC.LINKLIB
-//XMITIN   DD  UNIT=01C,DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//XMITIN   DD  DSN=MVP.WORK(FTPD),DISP=SHR
 //RECVLOG  DD  SYSOUT=*
 //SYSPRINT DD  SYSOUT=*
 //SYSIN    DD  DUMMY
@@ -111,9 +132,98 @@
 //*
 //FTPDDEVC EXEC PGM=IEBGENER
 //SYSUT1   DD DATA,DLM=@@
-###FTPD.CONF###
+{ftpd_conf}
 @@
 //SYSUT2   DD DISP=SHR,DSN=SYS1.PARMLIB(FTPDPM00)
 //SYSPRINT DD SYSOUT=*
 //SYSIN    DD DUMMY
+//ADDRAKFR EXEC PGM=IEBGENER
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD DUMMY
+//SYSUT1    DD *
+ /* RAKF REXX SCRIPT ADD FTPD USER AND FACILITY */
 
+call wto "FTPD Install: Adding FTPD user to RAKF"
+
+"ALLOC FI(USERS) DA('SYS1.SECURE.CNTL(USERS)') SHR "
+"EXECIO * DISKR USERS (FINIS STEM sortin."
+
+if rc > 0 then do
+    say "Error reading SYS1.SECURE.CNTL(USERS):" rc
+    "FREE F(USERS)"
+    exit 8
+end
+
+not_already_installed = 1
+do i = 1 to sortin.0
+    if pos('FTPD', sortin.i) > 0 then not_already_installed = 0
+end
+
+if not_already_installed then do
+    call wto "FTPD Install: Creating new string"
+    x = sortin.0 + 1
+    user_group = LEFT("FTPD",9)||LEFT("FTPD",9)
+    sortin.x = user_group||"{password:<8} N"
+    sortin.0 = x
+    call wto "FTPD Install: Sorting"
+    CALL RXSORT
+    call wto "FTPD Install: writting to disk"
+    "EXECIO * DISKW USERS (STEM SORTIN. OPEN FINIS"
+end
+"FREE F(USERS)"
+say "USERS Closed"
+
+call wto "FTPD Install: Adding FTPAUTH facility class"
+
+
+p1 = "FACILITYSVC244                                      FTPD    READ"
+p2 = "FACILITYFTPAUTH                                             NONE"
+p3 = "FACILITYFTPAUTH                                     ADMIN   READ"
+
+
+"ALLOC FI(PROFILES) DA('SYS1.SECURE.CNTL(PROFILES)') SHR "
+"EXECIO * DISKR PROFILES (FINIS STEM sortin."
+
+if rc > 0 then do
+    say "Error reading SYS1.SECURE.CNTL(PROFILES):" rc
+    "FREE F(PROFILES)"
+    exit 8
+end
+not_already_installed = 1
+do i = 1 to sortin.0
+    if pos(p1, sortin.i) > 0 then not_already_installed = 0
+    if pos(p2, sortin.i) > 0 then not_already_installed = 0
+    if pos(p3, sortin.i) > 0 then not_already_installed = 0
+end
+
+if not_already_installed then do
+    x = sortin.0 + 1; sortin.x = p1
+    x = sortin.0 + 2; sortin.x = p2
+    x = sortin.0 + 3; sortin.x = p3
+    sortin.0 = x
+
+    CALL RXSORT
+    "EXECIO * DISKW PROFILES (STEM SORTIN. OPEN FINIS"
+end
+
+"FREE F(PROFILES)"
+call wto "FTPD Users and profiles installed"
+/*
+//SYSUT2   DD DSN=SYS2.EXEC(RAKFUPDT),DISP=SHR
+//* **********************************************************
+//EXECSORT EXEC PGM=IKJEFT01,REGION=8192K
+//SYSTSIN  DD   *
+FREE FILE(RXLIB)
+ALLOC FILE(RXLIB) DSN('BREXX.V2R5M0.RXLIB') SHR
+FREE FILE(SYSEXEC)
+ALLOC FILE(SYSEXEC) DSN('SYS2.EXEC') SHR
+RX SYS2.EXEC(RAKFUPDT)
+//SYSTSPRT DD   SYSOUT=*
+//RAKFUSER EXEC RAKFUSER
+//RAKFPROF EXEC RAKFPROF
+
+'''
+
+with open(sys.argv[1],"r") as infile:
+    with open ("install.jcl","w") as outfile:
+        outfile.write(install_jcl.format(ftpd_conf=infile.read().rstrip(),password=randomStringwithDigitsAndSymbols(8)))

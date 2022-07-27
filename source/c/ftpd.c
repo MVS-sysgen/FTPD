@@ -85,6 +85,8 @@ char * strupr (char * s) {
 #define PARLMIB_ERROR_L  "FTP002E Warning - Line %d in %s not a valid option or disk"
 #define LISTEN_ERROR     "FTP003E Error - Can't Listen on port %d (Errno: %d)"
 #define ARG_ERROR        "FTP004E Warning - Argument (%d) %s = %s not recognized"
+#define PARLMIB_ERR_P    "FTP005E Warning - Line %d in %s PASV start port is higher than end port: %d > %d. Using random port."
+#define PARLMIB_ERR_S    "FTP005E Warning - Line %d in %s PASV passive port range too small. The minimum is 10."
 /* RAKF MESSAGES */
 #define LOGIN_MESSAGE_C  "FTP001R %s - logged in - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
 #define REJECT_MESSAGE   "FTP002R %d.%d.%d.%d - rejected - %.2d.%.2d.%.2d %d/%.2d/%.2d"
@@ -101,6 +103,8 @@ char   SERVER_IP [16];
 char   *PARMLIB;
 char   *PARMLIB_PRINT;
 char   *AUTH_USER;
+short  PASV_START_PORT;
+short  PASV_END_PORT;
 
 struct tm * td;
 time_t lt;
@@ -2159,7 +2163,20 @@ static void ftp_sock_rcb (SOCKET sock, data_tag_ptr data) {
             } else if (strcmp (cmd, "PASV") == 0) {
                 reset_data_connection (data);
                 /* listen on the same address as the client connected to */
-                data->DATA_LISTEN_SOCK = listen_sock (0, sock_ip (sock));
+                /* ***************************************** */
+
+                // PORT CODE GOES HERE
+                // If we're not using a specific range let the stack pick one
+                if (PASV_START_PORT == 0) {
+                    data->DATA_LISTEN_SOCK = listen_sock (0, sock_ip (sock));
+                } else {
+                    // Check to make sure 
+                }
+
+
+
+                
+                
                 if (data->DATA_LISTEN_SOCK == -1) {
                     ctl_write_line (data, "500 PASV command unsuccessful");
                 } else {
@@ -2549,9 +2566,9 @@ static long readparmlib () {
          }
          else if( strchr(line, '=') != NULL ) {
 
-            conf = strtok(line, "= ");
+            conf = strtok(line, "= -");
             //setting = strtok(NULL, "=");
-            parm = strtok(NULL, "= ");
+            parm = strtok(NULL, "= -");
             sprintf (wtomsg,PARMLIB_READ, conf, parm);
             _write2op (wtomsg);
 
@@ -2565,6 +2582,22 @@ static long readparmlib () {
                 strcpy (PASVADDR, parm);
             } else if( stricmp (conf, "AUTHUSER") == 0 ) {
                 strcpy (AUTH_USER, parm);
+            } else if( stricmp (conf, "PASVPORTS") == 0 ) {
+                // For setting your own passive ports PASV
+
+                PASV_START_PORT = (short)atoi (parm);
+                parm = strtok(NULL, "= -");
+                PASV_END_PORT = (short)atoi (parm);
+
+                if (PASV_START_PORT >= PASV_END_PORT) {
+                    sprintf (wtomsg,PARLMIB_ERR_P, j, PARMLIB_PRINT,PASV_START_PORT,PASV_END_PORT);
+                    _write2op (wtomsg);
+                    PASV_START_PORT = 0;
+                } else if(PASV_END_PORT - PASV_START_PORT < 10) {
+                    sprintf (wtomsg,PARLMIB_ERR_S, j, PARMLIB_PRINT);
+                    _write2op (wtomsg);
+                    PASV_START_PORT = 0;
+                }
             } else {
                 /* Error on line X in config file */
                 sprintf (wtomsg,PARLMIB_ERROR_L, j, PARMLIB_PRINT);
@@ -2615,6 +2648,7 @@ void main (int argc, char ** argv) {
     sprintf(PASVADDR, DEFAULT_PASVADDR);
     sprintf(AUTH_USER, '\0');
     SERVER_PORT = DEFAULT_SRVPORT;
+    PASV_START_PORT = 0;
 
     // Read config files and change the values if appropriate
     // Config file settings overide defaults
@@ -2672,7 +2706,8 @@ void main (int argc, char ** argv) {
                 sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, PASVADDR);
                 _write2op (wtomsg);
                 strcpy (PASVADDR, option);
-            } else if( stricmp (argument, "AUTHUSER") == 0 ) {
+            } else if( stricmp (argument, "AUTHUSR") == 0 ) {
+                // Technically AUTHUSER but parms can only be 7 chars apparently
                 sprintf (wtomsg,ARG_MESSAGES_S, optind, argument, option, AUTH_USER);
                 _write2op (wtomsg);
                 strcpy (AUTH_USER, option);

@@ -1,7 +1,0 @@
-# Installing FTPD
-/$CA
-/ $HASP000 OK;sh ./submit.sh ../SOFTWARE/FTPD/01_update_rakf.jcl
-/ $HASP395 UPDTRAKF ENDED;devinit 01c ../SOFTWARE/FTPD/FTPD.xmi
-HHC02245I 0:001C device initialized;sh ./submit.sh ../SOFTWARE/FTPD/02_install_ftpd.jcl
-/ $HASP395 RECVFTPD ENDED;/s ftpd
-/$VS,'S ZTIMER'

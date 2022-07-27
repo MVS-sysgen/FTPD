@@ -1,0 +1,3 @@
+[submodule "source/build/automvs"]
+	path = source/build/automvs
+	url = https://github.com/MVS-sysgen/automvs.git
