@@ -235,3 +235,9 @@ Copy the file `FTPD.conf` to `SYS1.PARMLIB(FTPDPM00)`
 ### Launch FTPD
 
 You're all setup now you can launch FTPD with `/s ftpd` and read the messages on the hercules console
+
+
+## Install JCL
+
+All of the above steps have been placed in the file `install.jcl`. Just make sure the datasets are correct
+and you can submit this JCL after uploading the XMI file.
