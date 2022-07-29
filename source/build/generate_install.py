@@ -14,13 +14,12 @@ def randomStringwithDigitsAndSymbols(stringLength=10):
     return ''.join(random.choice(password_characters) for i in range(stringLength))
 
 
-install_jcl = '''//INSTALL JOB (FTPD),
+install_jcl = '''//#001JCL JOB (FTPD),
 //            'FTPD INSTALL',
 //            CLASS=A,
 //            MSGCLASS=A,
 //            REGION=8M,
-//            MSGLEVEL=(1,1),
-//            USER=IBMUSER,PASSWORD=SYS1
+//            MSGLEVEL=(1,1)
 //*
 //* Installs FTPD/FTPDXCTL to SYS2.LINKLIB
 //* Adds FTPDPM00 to SYS1.PARMLIB
@@ -227,4 +226,4 @@ RX SYS2.EXEC(RAKFUPDT)
 
 with open(sys.argv[1],"r") as infile:
     with open ("install.jcl","w") as outfile:
-        outfile.write(install_jcl.format(ftpd_conf=infile.read().rstrip(),password=randomStringwithDigitsAndSymbols(8)))
+        outfile.write(install_jcl.format(ftpd_conf=infile.read().rstrip()))

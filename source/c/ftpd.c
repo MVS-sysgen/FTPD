@@ -35,6 +35,19 @@ extern long __libc_osvm;
 
 #include <sockets.h>
 
+/* Version information */
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 0
+#define VERSION_MICRO 1
+#define VERSION_SPECIAL ""
+
+
+#define STRINGIFY0(s) # s
+#define STRINGIFY(s) STRINGIFY0(s)
+
+#define VERSION STRINGIFY(VERSION_MAJOR)"."STRINGIFY(VERSION_MINOR)"."STRINGIFY(VERSION_MICRO)""VERSION_SPECIAL
+/* end version info */
+
 #ifdef __DEBUG__
 #define debug_output 1
 #endif
@@ -69,7 +82,7 @@ char * strupr (char * s) {
 /* TODO: Add custom banners */
 #define WELCOME_MESSAGE  "%s FTP server (MVS 3.8j) ready"
 
-#define INIT_MESSAGE     "FTP000I Startup - FTPD Starting with %d arguments"
+#define INIT_MESSAGE     "FTP000I Startup - FTPD Version %s - Starting with %d arguments."
 #define ARG_MESSAGES_S   "FTP001I Startup - Argument (%d) %s = %s (replaces previous setting: %s)"
 #define ARG_MESSAGES_I   "FTP001I Startup - Argument (%d) %s = %s (replaces previous setting: %d)"
 #define DDNAME_MESSAGES  "FTP001I Startup - Argument (%d) DD Name %s added"
@@ -78,6 +91,7 @@ char * strupr (char * s) {
 #define DEVICE_MESSAGES  "FTP003I Startup - Reading DASD %s,%s"
 #define DATASET_MESSAGE  "FTP004I Startup - %d datasets"
 #define SOCKET_MESSAGE   "FTP005I Startup Complete - FTP server listening on port: %u"
+#define CONNECT_MESSAGE  "FTP00GI Connection from %d.%d.%d.%d - %.2d.%.2d.%.2d %d/%.2d/%.2d"
 #define SHUTDOWN_MESSAGE "FTP006I Shutdown complete"
 /* Error messages */
 #define ERROR_MESSAGES   "FTP001E Error - %s"
@@ -2526,12 +2540,20 @@ static void ftp_serv_sock_rcb (SOCKET serv_sock, data_tag_ptr data) {
 
     client_addr_in = (void *)&client_addr;
     client_ip_addr = client_addr_in->sin_addr.s_addr;
+    clip = (unsigned char *) &client_ip_addr;
+    
+    time (&lt);
+    td = localtime (&lt);
+    
+    sprintf (wtomsg, CONNECT_MESSAGE, clip [0], clip [1], clip [2], clip [3],
+                 (* td).tm_hour, (* td).tm_min, (* td).tm_sec, (* td).tm_year + 1900, (* td).tm_mon + 1, (* td).tm_mday);
+    _write2op (wtomsg);
+    printf(wtomsg);
+    printf("\n");
 
     if (sock_ip (acc) != client_ip_addr && INSECURE == 0 ) {
         closesocket (acc);
-        clip = (unsigned char *) &client_ip_addr;
-        time (&lt);
-        td = localtime (&lt);
+        
         sprintf (wtomsg, REJECT_MESSAGE, clip [0], clip [1], clip [2], clip [3],
                  (* td).tm_hour, (* td).tm_min, (* td).tm_sec, (* td).tm_year + 1900, (* td).tm_mon + 1, (* td).tm_mday);
         _write2op (wtomsg);
@@ -2651,7 +2673,7 @@ void main (int argc, char ** argv) {
     p_root r;
     int dircount = 0;
 
-    sprintf (wtomsg, INIT_MESSAGE, argc-1);
+    sprintf (wtomsg, INIT_MESSAGE, VERSION, argc-1);
     _write2op (wtomsg);
 
     PARMLIB = (char *)malloc (MAXDSN);

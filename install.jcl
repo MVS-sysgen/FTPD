@@ -1,10 +1,9 @@
-//INSTALL JOB (FTPD),
+//#001JCL JOB (FTPD),
 //            'FTPD INSTALL',
 //            CLASS=A,
 //            MSGCLASS=A,
 //            REGION=8M,
-//            MSGLEVEL=(1,1),
-//            USER=IBMUSER,PASSWORD=SYS1
+//            MSGLEVEL=(1,1)
 //*
 //* Installs FTPD/FTPDXCTL to SYS2.LINKLIB
 //* Adds FTPDPM00 to SYS1.PARMLIB

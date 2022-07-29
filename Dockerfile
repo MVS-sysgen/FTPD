@@ -25,7 +25,7 @@ WORKDIR /
 RUN git clone --depth 1 https://github.com/mvslovers/rdrprep.git
 WORKDIR /rdrprep
 RUN make && make install
-RUN pip3 install ebcdic
+RUN pip3 install ebcdic requests
 WORKDIR /XMI
 COPY --from=ftpd_objects /MVSCE /MVSCE
 COPY --from=compiler /c/ftpd.load /XMI/
@@ -34,5 +34,7 @@ COPY FTPD.conf /XMI/
 RUN rdrprep link_ftpd.template
 RUN python3 generate_install.py FTPD.conf
 RUN python3 -u autobuild.py -d -m /MVSCE
+RUN cp install.jcl \#001JCL.jcl
+RUN python3 -u /MVSCE/MVP/extras/package_release.py --xmi-files FTPD.XMI --task-files \#001JCL.jcl --mvsce /MVSCE --name ./FTPD.MVP
 WORKDIR /artifacts
-RUN mv /XMI/FTPD.XMI /artifacts && mv /XMI/install.jcl /artifacts
+RUN mv /XMI/FTPD.XMI /artifacts && mv /XMI/install.jcl /artifacts && mv /XMI/FTPD.MVP /artifacts
