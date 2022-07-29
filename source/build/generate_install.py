@@ -19,12 +19,13 @@ install_jcl = '''//INSTALL JOB (FTPD),
 //            CLASS=A,
 //            MSGCLASS=A,
 //            REGION=8M,
-//            MSGLEVEL=(1,1)
+//            MSGLEVEL=(1,1),
+//            USER=IBMUSER,PASSWORD=SYS1
 //*
 //* Installs FTPD/FTPDXCTL to SYS2.LINKLIB
 //* Adds FTPDPM00 to SYS1.PARMLIB
 //* Adds FTPD procedure to SYS2.PROCLIB
-//* Adds the 
+//* Adds the FTP user and updates RAKF profiles
 //*
 //FTDELETE EXEC PGM=IDCAMS,REGION=1024K
 //SYSPRINT DD  SYSOUT=A
@@ -163,7 +164,7 @@ if not_already_installed then do
     call wto "FTPD Install: Creating new string"
     x = sortin.0 + 1
     user_group = LEFT("FTPD",9)||LEFT("FTPD",9)
-    sortin.x = user_group||"{password:<8} N"
+    sortin.x = user_group||RANDOMPW(5)||" N"
     sortin.0 = x
     call wto "FTPD Install: Sorting"
     CALL RXSORT
