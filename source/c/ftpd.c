@@ -86,7 +86,9 @@ char * strupr (char * s) {
 #define LISTEN_ERROR     "FTP003E Error - Can't Listen on port %d (Errno: %d)"
 #define ARG_ERROR        "FTP004E Warning - Argument (%d) %s = %s not recognized"
 #define PARLMIB_ERR_P    "FTP005E Warning - Line %d in %s PASV start port is higher than end port: %d > %d. Using random port."
-#define PARLMIB_ERR_S    "FTP005E Warning - Line %d in %s PASV passive port range too small. The minimum is 10."
+#define PARLMIB_ERR_S    "FTP005E Warning - Line %d in %s PASV passive port range too small. The minimum is 10. Using random port."
+#define PARLMIB_ERR_E    "FTP005E Warning - Line %d in %s PASV passive port range must be > 1024. Using random port."
+#define PARLMIB_ERR_I    "FTP005E Warning - Line %d in %s INSECURE must be 1 or 0"
 /* RAKF MESSAGES */
 #define LOGIN_MESSAGE_C  "FTP001R %s - logged in - TIME=%.2d.%.2d.%.2d DATE=%d/%.2d/%.2d"
 #define REJECT_MESSAGE   "FTP002R %d.%d.%d.%d - rejected - %.2d.%.2d.%.2d %d/%.2d/%.2d"
@@ -105,6 +107,8 @@ char   *PARMLIB_PRINT;
 char   *AUTH_USER;
 short  PASV_START_PORT;
 short  PASV_END_PORT;
+int    INSECURE;
+
 
 struct tm * td;
 time_t lt;
@@ -1054,13 +1058,13 @@ static char * sockaddr_to_comma_list (SOCKET SOCK) {
     d = p % 256;
     c = (p - d) / 256;
 
-    if (b->sin_addr.s_addr) { /* *** NOT ALL IMPLEMENTATIONS EXPORT THE HOST IP-ADDRESS, SO USE PASVADDR *** */
+/* *** NOT ALL IMPLEMENTATIONS EXPORT THE HOST IP-ADDRESS, SO USE PASVADDR *** */
+    /* if (b->sin_addr.s_addr) { 
         l.S_un.S_addr = b->sin_addr.s_addr;
         sprintf (s, "%d,%d,%d,%d,%d,%d", l.S_un.S_un_b.s_b1, l.S_un.S_un_b.s_b2, l.S_un.S_un_b.s_b3, l.S_un.S_un_b.s_b4, c, d);
-    } else {
-        sprintf (s, "%s,%d,%d", PASVADDR, c, d);
-    };
-
+    } else { */
+    sprintf (s, "%s,%d,%d", PASVADDR, c, d);
+    /* };  */
     return (s);
 };
 
@@ -1998,10 +2002,12 @@ static long get_cmd_args (char * line, char * cmd, char * args) {
     a = strstr (line, " ");
     if (a) {
         a [0] = 0;
-        strncpy (cmd, line, PATHLENGTH);
+        //strncpy (cmd, line, PATHLENGTH);
+        strcpy (cmd, line);
         a [0] = ' ';
         a++;
-        strncpy (args, a, PATHLENGTH);
+        //strncpy (args, a, PATHLENGTH);
+        strcpy (args, a);
     } else {
         strncpy (cmd, line, 39);
         cmd [39] = 0;
@@ -2036,6 +2042,7 @@ static void ftp_sock_rcb (SOCKET sock, data_tag_ptr data) {
     SOCKET tsock;
     char   fmode [19];
     int    org;
+    short    pasv_port;
     unsigned int acee_old;
 
     /* get whatever data is ready */
@@ -2170,12 +2177,9 @@ static void ftp_sock_rcb (SOCKET sock, data_tag_ptr data) {
                 if (PASV_START_PORT == 0) {
                     data->DATA_LISTEN_SOCK = listen_sock (0, sock_ip (sock));
                 } else {
-                    // Check to make sure 
+                    pasv_port = (rand() % (PASV_END_PORT - PASV_START_PORT + 1)) + PASV_START_PORT;
+                    data->DATA_LISTEN_SOCK = listen_sock (pasv_port, sock_ip (sock));
                 }
-
-
-
-                
                 
                 if (data->DATA_LISTEN_SOCK == -1) {
                     ctl_write_line (data, "500 PASV command unsuccessful");
@@ -2525,7 +2529,7 @@ static void ftp_serv_sock_rcb (SOCKET serv_sock, data_tag_ptr data) {
     client_addr_in = (void *)&client_addr;
     client_ip_addr = client_addr_in->sin_addr.s_addr;
 
-    if (sock_ip (acc) != client_ip_addr) {
+    if (sock_ip (acc) != client_ip_addr && INSECURE == 0 ) {
         closesocket (acc);
         clip = (unsigned char *) &client_ip_addr;
         time (&lt);
@@ -2582,12 +2586,21 @@ static long readparmlib () {
                 strcpy (PASVADDR, parm);
             } else if( stricmp (conf, "AUTHUSER") == 0 ) {
                 strcpy (AUTH_USER, parm);
+            } else if( stricmp (conf, "INSECURE") == 0 ) {
+                INSECURE = atoi (parm);
+                if ( INSECURE !=1 && INSECURE != 0 ) {
+                    sprintf (wtomsg,PARLMIB_ERR_I, j, PARMLIB_PRINT);
+                    _write2op (wtomsg);
+                    INSECURE = 0;
+                } 
             } else if( stricmp (conf, "PASVPORTS") == 0 ) {
                 // For setting your own passive ports PASV
 
                 PASV_START_PORT = (short)atoi (parm);
                 parm = strtok(NULL, "= -");
                 PASV_END_PORT = (short)atoi (parm);
+                sprintf(wtomsg,"FTP001I Startup - Parameter Passive port range %d to %d",PASV_START_PORT,PASV_END_PORT);
+                _write2op (wtomsg);
 
                 if (PASV_START_PORT >= PASV_END_PORT) {
                     sprintf (wtomsg,PARLMIB_ERR_P, j, PARMLIB_PRINT,PASV_START_PORT,PASV_END_PORT);
@@ -2595,6 +2608,11 @@ static long readparmlib () {
                     PASV_START_PORT = 0;
                 } else if(PASV_END_PORT - PASV_START_PORT < 10) {
                     sprintf (wtomsg,PARLMIB_ERR_S, j, PARMLIB_PRINT);
+                    _write2op (wtomsg);
+                    PASV_START_PORT = 0;
+                
+                } else if(PASV_START_PORT < 1024 ) {
+                    sprintf (wtomsg,PARLMIB_ERR_E, j, PARMLIB_PRINT);
                     _write2op (wtomsg);
                     PASV_START_PORT = 0;
                 }
@@ -2649,6 +2667,7 @@ void main (int argc, char ** argv) {
     sprintf(AUTH_USER, '\0');
     SERVER_PORT = DEFAULT_SRVPORT;
     PASV_START_PORT = 0;
+    INSECURE = 0;
 
     // Read config files and change the values if appropriate
     // Config file settings overide defaults
