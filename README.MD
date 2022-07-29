@@ -12,6 +12,30 @@ the command `RX MVP INSTALL FTPD`. Once completed you can start the FTPD server 
 
 :exclamation: If you're not using MVS/CE you should follow the manual install.
 
+## Example Startup
+
+```
+/s ftpd                          
+/ $HASP100 FTPD     ON STCINRDR      
+/ $HASP373 FTPD     STARTED         
+/ IEF403I FTPD - STARTED - TIME=23.05.01
+/ +FTP000I Startup - FTPD Starting with 1 arguments
+/ +FTP002I Startup - Reading parmlib SYS1.PARMLIB(FTPDPM00)
+/ +FTP001I Startup - Parameter SRVPORT = '2121'
+/ +FTP001I Startup - Parameter SRVIP = 'ANY'
+/ +FTP001I Startup - Parameter PASVADR = '127,0,0,1'
+/ +FTP001I Startup - Parameter AUTHUSER = 'IBMUSER'
+/ +FTP001I Startup - Argument (1) DD Name AAINTRDR added
+/ +FTP002I Startup - Reading 5 DASD
+/ +FTP003I Startup - Reading DASD MVSRES,3350
+/ +FTP003I Startup - Reading DASD MVS000,3350
+/ +FTP003I Startup - Reading DASD PUB000,3380
+/ +FTP003I Startup - Reading DASD PUB001,3390
+/ +FTP003I Startup - Reading DASD SYSCPK,3350
+/ +FTP004I Startup - 173 datasets    
+/ +FTP005I Startup Complete - FTP server listening on port: 2121
+```
+
 ## Access
 
 Using this install everyone in the RAKF group `ADMIN` has access to use FTP. To allow users
