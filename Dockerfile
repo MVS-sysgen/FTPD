@@ -7,7 +7,6 @@ ADD source/hlasm/ /build/hlasm/
 RUN pip3 install ebcdic
 RUN python3 generate_ftpdrakf.py ./hlasm
 RUN python3 -u autobuild.py --objects -d -m /MVSCE
-RUN ls -al /build
 
 FROM mainframed767/jcc:wine as compiler
 # With the objects we can compile ftpd.c
@@ -33,7 +32,7 @@ COPY --from=compiler /c/ftpd.load /XMI/
 COPY source/build/ /XMI/
 COPY FTPD.conf /XMI/
 RUN rdrprep link_ftpd.template
-RUN python3 -u autobuild.py -d -m /MVSCE
 RUN python3 generate_install.py FTPD.conf
+RUN python3 -u autobuild.py -d -m /MVSCE
 WORKDIR /artifacts
 RUN mv /XMI/FTPD.XMI /artifacts && mv /XMI/install.jcl /artifacts
