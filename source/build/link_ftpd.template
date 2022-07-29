@@ -60,3 +60,138 @@ $$
 //SYSUT2   DD DSN=&&SYSUT2,UNIT=SYSDA,
 //         SPACE=(TRK,(255,255)),
 //         DISP=(NEW,DELETE,DELETE)
+//*
+//* Add FTPD to SYS2.PROCLIB
+//*
+//FTPDPROC EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPD   PROC
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC
+//* To use: in Hercules console issue /s FTPD to start FTP server
+//*
+//* To change settings edit config file SYS1.PARMLIB(FTPDPM00)
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='DD=AAINTRDR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPD)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//* Adds FTPDPARM
+//FTPDPARM EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+//FTPDPARM PROC SRVPORT='2121',AUTHUSR='IBMUSER'
+//********************************************************************
+//*
+//* MVS3.8j RAKF Enabled FTP server PROC with custom arguments
+//* To use: in Hercules console issue
+//*    /s FTPDPARM,srvport=54321,srvip=10.10.10.10
+//*
+//********************************************************************
+//FTPD   EXEC PGM=FTPDXCTL,TIME=1440,REGION=4096K,
+// PARM='SRVPORT=&SRVPORT DD=AAINTRDR AUTHUSR=&AUTHUSR'
+//AAINTRDR DD SYSOUT=(A,INTRDR),DCB=(RECFM=FB,LRECL=80,BLKSIZE=80)
+//STDOUT   DD SYSOUT=*
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS2.PROCLIB(FTPDPARM)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//*
+//* Add FTPDPM00 to SYS1.PARMLIB
+//*
+//FTPDDEVC EXEC PGM=IEBGENER
+//SYSUT1   DD DATA,DLM=@@
+::A FTPD.conf
+@@
+//SYSUT2   DD DISP=SHR,DSN=SYS1.PARMLIB(FTPDPM00)
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY
+//ADDRAKFR EXEC PGM=IEBGENER
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD DUMMY
+//SYSUT1    DD *
+ /* RAKF REXX SCRIPT ADD FTPD USER AND FACILITY */
+
+call wto "FTPD Install: Adding FTPD user to RAKF"
+
+"ALLOC FI(USERS) DA('SYS1.SECURE.CNTL(USERS)') SHR "
+"EXECIO * DISKR USERS (FINIS STEM sortin."
+
+if rc > 0 then do
+    say "Error reading SYS1.SECURE.CNTL(USERS):" rc
+    "FREE F(USERS)"
+    exit 8
+end
+
+not_already_installed = 1
+do i = 1 to sortin.0
+    if pos('FTPD', sortin.i) > 0 then not_already_installed = 0
+end
+
+if not_already_installed then do
+    call wto "FTPD Install: Creating new string"
+    x = sortin.0 + 1
+    user_group = LEFT("FTPD",9)||LEFT("FTPD",9)
+    sortin.x = user_group||"RANDOMPW N"
+    sortin.0 = x
+    call wto "FTPD Install: Sorting"
+    CALL RXSORT
+    call wto "FTPD Install: writting to disk"
+    "EXECIO * DISKW USERS (STEM SORTIN. OPEN FINIS"
+end
+"FREE F(USERS)"
+say "USERS Closed"
+
+call wto "FTPD Install: Adding FTPAUTH facility class"
+
+
+p1 = "FACILITYSVC244                                      FTPD    READ"
+p2 = "FACILITYFTPAUTH                                             NONE"
+p3 = "FACILITYFTPAUTH                                     ADMIN   READ"
+
+
+"ALLOC FI(PROFILES) DA('SYS1.SECURE.CNTL(PROFILES)') SHR "
+"EXECIO * DISKR PROFILES (FINIS STEM sortin."
+
+if rc > 0 then do
+    say "Error reading SYS1.SECURE.CNTL(PROFILES):" rc
+    "FREE F(PROFILES)"
+    exit 8
+end
+not_already_installed = 1
+do i = 1 to sortin.0
+    if pos(p1, sortin.i) > 0 then not_already_installed = 0
+    if pos(p2, sortin.i) > 0 then not_already_installed = 0
+    if pos(p3, sortin.i) > 0 then not_already_installed = 0
+end
+
+if not_already_installed then do
+    x = sortin.0 + 1; sortin.x = p1
+    x = sortin.0 + 2; sortin.x = p2
+    x = sortin.0 + 3; sortin.x = p3
+    sortin.0 = x
+
+    CALL RXSORT
+    "EXECIO * DISKW PROFILES (STEM SORTIN. OPEN FINIS"
+end
+
+"FREE F(PROFILES)"
+call wto "FTPD Users and profiles installed"
+/*
+//SYSUT2   DD DSN=SYS2.EXEC(RAKFUPDT),DISP=SHR
+//* **********************************************************
+//EXECSORT EXEC PGM=IKJEFT01,REGION=8192K
+//SYSTSIN  DD   *
+FREE FILE(RXLIB)
+ALLOC FILE(RXLIB) DSN('BREXX.V2R5M0.RXLIB') SHR
+FREE FILE(SYSEXEC)
+ALLOC FILE(SYSEXEC) DSN('SYS2.EXEC') SHR
+RX SYS2.EXEC(RAKFUPDT)
+//SYSTSPRT DD   SYSOUT=*
+//RAKFUSER EXEC RAKFUSER
+//RAKFPROF EXEC RAKFPROF
