@@ -20,7 +20,7 @@ install_maclibs = '''//MVPMACLB JOB (FTPD),
 //MVPINST EXEC MVP,INSTALL='MACLIB -D' 
 '''
 
-desc = 'XMIssion: XMI and Virtual Tape (AWS/HET) File Manager'
+desc = 'FTP Autobuild Script'
 arg_parser = argparse.ArgumentParser(description=desc)
 arg_parser.add_argument('-d', '--debug', help="Print debugging statements", action="store_const", dest="loglevel", const=logging.DEBUG, default=logging.WARNING)
 arg_parser.add_argument('-m', '--mvsce', help="MVS/CE folder location", default="MVSCE")
