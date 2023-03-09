@@ -1,4 +1,4 @@
-FROM mainframed767/mvsce:latest as ftpd_objects
+FROM mainframed767/mvsce:2.0.1 as ftpd_objects
 # Install rdrprep
 RUN unset LD_LIBRARY_PATH && apt-get update && apt-get install -yq git build-essential python3-pip 
 WORKDIR /build
@@ -19,7 +19,7 @@ RUN wine /jcc/jcc.exe -I/jcc/include -I/c -D__MVS_ -o -list=list.out /c/ftpd.c
 RUN /jcc/objscan ftpdrakf.punch objscan_input.nam ftpdrac.obj
 RUN /jcc/prelink -r /jcc/objs ftpd.load ftpd.obj ftpdrac.obj
 
-FROM mainframed767/mvsce:latest
+FROM mainframed767/mvsce:2.0.1
 RUN unset LD_LIBRARY_PATH && apt-get update && apt-get install -yq git build-essential python3-pip
 WORKDIR /
 RUN git clone --depth 1 https://github.com/mvslovers/rdrprep.git
