@@ -2,7 +2,7 @@
 
 ## Automated Build
 
-To make building easier and automated the script `autobuild.py` was developed. 
+To make building easier an automated script `autobuild.py` was developed. 
 It relies on the python automvs library. A docker build file has been created
 which automates all the steps below. 
 
